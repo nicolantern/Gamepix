@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mini Games Arcade</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>Mini Games Arcade</h1>
+    <button id="back-button" hidden>&larr; Back</button>
+  </header>
+  <main>
+    <div id="menu">
+      <button class="menu-btn" data-game="snake">Snake</button>
+      <button class="menu-btn" data-game="pong">Pong</button>
+      <button class="menu-btn" data-game="tictactoe">Tic-Tac-Toe</button>
+      <button class="menu-btn" data-game="memory">Memory Match</button>
+      <button class="menu-btn" data-game="flappy">Flappy Bird</button>
+    </div>
+    <div id="game-container"></div>
+  </main>
+  <script type="module" src="main.js"></script>
+</body>
+</html>
