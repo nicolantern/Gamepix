@@ -10,7 +10,7 @@ A single-page arcade with five small games selectable from a menu. Static HTML �
 ## Games
 
 1. **Snake** — canvas, arrow keys, grid-based, grows on eating food, dies on wall/self collision.
-2. **Pong** — canvas, single-player vs simple tracking AI, mouse or W/S to move paddle, first to N points.
+2. **Pong** — canvas, single-player vs simple tracking AI, mouse or W/S to move paddle, first to 7 points wins.
 3. **Tic-Tac-Toe** — DOM, 2-player hot-seat (X and O alternate on the same keyboard). No AI.
 4. **Memory Match** — DOM, 4×4 grid of face-down cards, 8 pairs, click to flip, match removes pair.
 5. **Flappy Bird** — canvas, space or click to flap, scrolling pipes, score = pipes passed.
