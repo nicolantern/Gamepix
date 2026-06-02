@@ -245,14 +245,13 @@
 
   // ─── Spawn ────────────────────────────────────────────────────────────────
   function spawnPiece(type) {
-    // Standard spawn: origin at col 3, row -1 (above visible area, so cells start at row 0 or -1)
+    // Standard spawn: origin at col 3, row -1 (cells occupy the top visible row, y=0).
     const piece = { type, rot: 0, x: 3, y: -1 };
+    // Block-out rule: if the piece overlaps the stack at its spawn position, it's game over.
+    // (Do NOT nudge upward — cells above the grid never "collide", so nudging would mask
+    // the top-out and make the game unlosable.)
     if (collides(grid, getCells(type, 0, piece.x, piece.y))) {
-      // Try one row up
-      piece.y = -2;
-      if (collides(grid, getCells(type, 0, piece.x, piece.y))) {
-        return null; // top-out
-      }
+      return null; // top-out
     }
     return piece;
   }
