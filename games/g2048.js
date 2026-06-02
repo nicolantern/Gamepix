@@ -7,24 +7,6 @@
     // Compact non-zero values to the left
     var vals = row.filter(function (v) { return v !== 0; });
     var gained = 0;
-    // Merge adjacent equal pairs (once per position)
-    for (var i = 0; i < vals.length - 1; i++) {
-      if (vals[i] === vals[i + 1]) {
-        vals[i] = vals[i] * 2;
-        gained += vals[i];
-        vals.splice(i + 1, 1);
-        i++; // skip the merged position so we don't chain
-        i--; // counteract the loop increment — actually: after merge, i stays same
-        // correction: we want to skip the merged slot, so just increment i once extra
-        // Re-examine: after splice, vals[i] is now merged, vals[i+1] is the next.
-        // The loop i++ will advance past the merged tile, which is correct (no chain).
-        // The extra i-- above is wrong — remove it. Let's do it cleanly:
-      }
-    }
-    // Re-do the merge cleanly without the confusing i-- above
-    // (We already mutated vals above; let's redo from scratch)
-    vals = row.filter(function (v) { return v !== 0; });
-    gained = 0;
     var merged = [];
     var skip = false;
     for (var j = 0; j < vals.length; j++) {
@@ -50,6 +32,10 @@
   console.assert(slideRow([2,0,2,0]).gained === 4, '2048 gained [2,0,2,0]');
   console.assert(JSON.stringify(slideRow([2,2,4,0]).row) === JSON.stringify([4,4,0,0]), '2048 no-chain [2,2,4]');
   console.assert(JSON.stringify(slideRow([4,0,0,0]).row) === JSON.stringify([4,0,0,0]), '2048 single stays');
+  console.assert(JSON.stringify(slideRow([4,4,4,4]).row) === JSON.stringify([8,8,0,0]), '2048 merge [4,4,4,4]');
+  console.assert(slideRow([4,4,4,4]).gained === 16, '2048 gained [4,4,4,4]');
+  console.assert(JSON.stringify(slideRow([2,4,2,4]).row) === JSON.stringify([2,4,2,4]), '2048 no-merge [2,4,2,4]');
+  console.assert(slideRow([2,4,2,4]).gained === 0, '2048 gained [2,4,2,4]');
 
   // ── Grid helpers ───────────────────────────────────────────────────────────
 
