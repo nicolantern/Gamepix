@@ -88,9 +88,9 @@
   let playerAlive = true;
   let invulTimer = 0; // ms of remaining invulnerability after being hit
 
-  // Player bullet (only one at a time)
-  let bullet = null; // { x, y } or null
-  let bulletCooldown = 0; // ms remaining before can fire again (short cooldown after shot lands)
+  // Player bullets — triple shot; each bullet: { x, y, vx, vy }
+  let bullets = []; // array of active player bullets
+  let bulletCooldown = 0; // ms remaining before next volley can fire
 
   // Invader formation
   let invaders = []; // [row][col] = { alive, x, y }
@@ -189,7 +189,7 @@
     playerX = CW / 2 - PLAYER_W / 2;
     playerAlive = true;
     invulTimer = 0;
-    bullet = null;
+    bullets = [];
     bulletCooldown = 0;
     bombs = [];
     bombTimer = BOMB_DROP_INTERVAL;
@@ -204,7 +204,7 @@
 
   function nextWave() {
     wave++;
-    bullet = null;
+    bullets = [];
     bulletCooldown = 0;
     bombs = [];
     bombTimer = BOMB_DROP_INTERVAL;
@@ -221,14 +221,22 @@
   }
 
   // ─── Fire ────────────────────────────────────────────────────────────────────
+  // Fires a spread of 3 bullets simultaneously (triple shot).
+  // Limited by a cooldown of 250 ms AND a max of 9 on-screen player bullets.
+  const BULLET_VX_SPREAD = 120; // px/s horizontal offset for side bullets
   function fire() {
     if (gameOver || !playerAlive) return;
-    if (bullet !== null) return;
     if (bulletCooldown > 0) return;
-    bullet = {
-      x: playerX + PLAYER_W / 2 - BULLET_W / 2,
-      y: CH - PLAYER_Y_OFFSET - PLAYER_H - BULLET_H
-    };
+    if (bullets.length >= 9) return; // cap: don't fire if too many on screen
+    const nx = playerX + PLAYER_W / 2 - BULLET_W / 2;
+    const ny = CH - PLAYER_Y_OFFSET - PLAYER_H - BULLET_H;
+    // Centre bullet — straight up
+    bullets.push({ x: nx, y: ny, vx: 0, vy: -BULLET_SPEED });
+    // Left bullet — slight leftward drift
+    bullets.push({ x: nx, y: ny, vx: -BULLET_VX_SPREAD, vy: -BULLET_SPEED });
+    // Right bullet — slight rightward drift
+    bullets.push({ x: nx, y: ny, vx:  BULLET_VX_SPREAD, vy: -BULLET_SPEED });
+    bulletCooldown = 250; // 250 ms between volleys
   }
 
   // ─── Move left/right ─────────────────────────────────────────────────────────
@@ -289,12 +297,16 @@
     }
   }
 
-  // ─── Update bullet ───────────────────────────────────────────────────────────
+  // ─── Update bullets ──────────────────────────────────────────────────────────
   function updateBullet(dt) {
-    if (!bullet) return;
-    bullet.y -= BULLET_SPEED * dt;
-    if (bullet.y + BULLET_H < 0) {
-      bullet = null;
+    // Move all bullets using their individual vx/vy; cull any that leave the top
+    for (let i = bullets.length - 1; i >= 0; i--) {
+      const b = bullets[i];
+      b.x += b.vx * dt;
+      b.y += b.vy * dt; // vy is negative (upward)
+      if (b.y + BULLET_H < 0) {
+        bullets.splice(i, 1);
+      }
     }
   }
 
@@ -369,47 +381,45 @@
 
   // ─── Check collisions ────────────────────────────────────────────────────────
   function checkCollisions() {
-    // Player bullet vs invaders
-    if (bullet) {
+    // Player bullets vs invaders — iterate backwards so splicing doesn't skip
+    for (let bi = bullets.length - 1; bi >= 0; bi--) {
+      const blt = bullets[bi];
+      let hit = false;
       outer:
       for (let r = 0; r < ROWS; r++) {
         for (let c = 0; c < COLS; c++) {
           const inv = invaders[r][c];
           if (!inv.alive) continue;
-          if (rectsOverlap(bullet.x, bullet.y, BULLET_W, BULLET_H,
+          if (rectsOverlap(blt.x, blt.y, BULLET_W, BULLET_H,
                            inv.x, inv.y, INV_W, INV_H)) {
             inv.alive = false;
             score += ROW_POINTS[r];
-            bullet = null;
-            bulletCooldown = 100;
+            bullets.splice(bi, 1);
+            hit = true;
             // Check wave clear
             if (livingCount() === 0) nextWave();
             break outer;
           }
         }
       }
-    }
+      if (hit) continue;
 
-    // Player bullet vs UFO
-    if (bullet && ufo) {
-      if (rectsOverlap(bullet.x, bullet.y, BULLET_W, BULLET_H,
-                       ufo.x, ufo.y, UFO_W, UFO_H)) {
+      // Player bullet vs UFO
+      if (ufo && rectsOverlap(blt.x, blt.y, BULLET_W, BULLET_H,
+                               ufo.x, ufo.y, UFO_W, UFO_H)) {
         const pts = UFO_POINTS[Math.floor(Math.random() * UFO_POINTS.length)];
         score += pts;
         ufoFlash = 800; // ms flash message
         ufo = null;
         ufoTimer = randomUfoInterval();
-        bullet = null;
-        bulletCooldown = 100;
+        bullets.splice(bi, 1);
+        continue;
       }
-    }
 
-    // Player bullet vs bunkers
-    if (bullet) {
+      // Player bullet vs bunkers
       for (const bk of bunkers) {
-        if (erodeBunker(bk, bullet.x, bullet.y, BULLET_W, BULLET_H)) {
-          bullet = null;
-          bulletCooldown = 100;
+        if (erodeBunker(bk, blt.x, blt.y, BULLET_W, BULLET_H)) {
+          bullets.splice(bi, 1);
           break;
         }
       }
@@ -454,7 +464,7 @@
   function triggerGameOver(msg) {
     gameOver = true;
     gameOverMsg = msg;
-    bullet = null;
+    bullets = [];
     bombs = [];
   }
 
@@ -641,10 +651,10 @@
       ctx.fillText('✦ ✦ ✦', playerX + PLAYER_W / 2, py + PLAYER_H / 2);
     }
 
-    // Bullet
-    if (bullet) {
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(bullet.x, bullet.y, BULLET_W, BULLET_H);
+    // Bullets (triple shot — draw all active player bullets)
+    ctx.fillStyle = '#ffffff';
+    for (const b of bullets) {
+      ctx.fillRect(b.x, b.y, BULLET_W, BULLET_H);
     }
 
     // Bombs
@@ -781,8 +791,8 @@
     if (rootEl)         { rootEl.remove(); rootEl = null; }
     // Clear state
     canvas = null; ctx = null; statusEl = null;
-    invaders = []; bombs = []; bunkers = [];
-    bullet = null; ufo = null;
+    invaders = []; bombs = []; bunkers = []; bullets = [];
+    ufo = null;
     leftHeld = false; rightHeld = false;
   }
 
