@@ -2,7 +2,7 @@ const introOverlay = document.getElementById('intro-overlay');
 if (introOverlay) {
   const dismiss = () => introOverlay.classList.add('dismissed');
   introOverlay.addEventListener('click', dismiss);
-  setTimeout(() => { introOverlay.remove(); }, 4000);
+  setTimeout(() => { introOverlay.remove(); }, 5000);
 }
 
 const menu = document.getElementById('menu');
