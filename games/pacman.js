@@ -270,7 +270,14 @@
 
   // ─── Actor stepping ───────────────────────────────────────────────────────
   function stepActor(a, dtSec, speed, isGhost) {
-    if (a.stuck) return;
+    // If Pac-Man stalled against a wall, re-check each frame so a newly-pressed
+    // direction unsticks him (otherwise he'd freeze in corners permanently).
+    if (a.stuck) {
+      const chosen = pickPacDir();
+      if (!chosen) return;
+      a.dir = chosen;
+      a.stuck = false;
+    }
 
     a.pixelProgress += speed * dtSec;
 
@@ -505,7 +512,8 @@
     buildGrid();
     fruitActive  = false;
     fruitMs      = 0;
-    fruitLevel   = 0;
+    // NB: don't reset fruitLevel here — it tracks progression so fruit bonuses
+    // escalate across levels (reset only on a fresh game).
     frightTotal  = Math.max(2000, FRIGHT_MS_BASE - (level - 1) * 800);
     resetPositions();
   }
@@ -635,7 +643,6 @@
     ctx.fill();
 
     if (g.mode !== MODE_FRIGHTENED) {
-      drawEyes(x, y, r, g.dir, '#0af');
       // White part of eyes
       ctx.fillStyle = '#fff';
       const ex = r * 0.35, ey = y - r * 0.3;
