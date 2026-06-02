@@ -298,9 +298,69 @@
   };
 
   // ---------------------------------------------------------------------------
+  // MENU — the showcase: a long, multi-section original anthem in that uplifting
+  // melodic-future style (intro → build → DROP → breakdown → final drop, ~60s).
+  // Built programmatically so the 32-bar arrangement stays readable.
+  // ---------------------------------------------------------------------------
+  (function buildMenuAnthem() {
+    var prog = [
+      C('D2',  ['D3','F3','A3']),    // vi  (Dm)
+      C('A#2', ['A#3','D4','F4']),   // IV  (Bb)
+      C('F2',  ['F3','A3','C4']),    // I   (F)
+      C('C2',  ['C3','E3','G3'])     // V   (C)
+    ];
+    var chords = [];
+    for (var r = 0; r < 8; r++) chords = chords.concat(prog); // 32 bars
+
+    var arr = [];
+    function section(from, to, cfg) { for (var b = from; b <= to; b++) arr[b] = cfg; }
+    section(0,  3,  { pad: true });                                                   // intro: pad only
+    section(4,  7,  { pad: true, arp: true, drums: 'soft' });                         // intro: + arp, soft kick
+    section(8,  11, { pad: true, arp: true, bass: true, drums: true, lead: true });   // build A
+    section(12, 15, { pad: true, arp: true, bass: true, drums: true, lead: true });   // build B (riser at 15)
+    section(16, 23, { pad: true, arp: true, bass: true, drums: true, lead: true, big: true }); // DROP
+    section(24, 27, { pad: true, arp: true, lead: true, drums: 'soft' });             // breakdown
+    section(28, 31, { pad: true, arp: true, bass: true, drums: true, lead: true, big: true }); // final drop
+
+    var lead = [
+      // bars 0-7 — intro, no lead
+      [null, 32],
+      // bars 8-15 — build melody (32 beats)
+      [n('A4'),1],[n('C5'),1],[n('D5'),1.5],[n('C5'),0.5],
+      [n('A4'),1],[n('F4'),1],[n('G4'),2],
+      [n('F4'),1],[n('A4'),1],[n('C5'),1.5],[n('D5'),0.5],
+      [n('C5'),1],[n('A4'),1],[n('G4'),2],
+      [n('A4'),1],[n('C5'),1],[n('F5'),1.5],[n('E5'),0.5],
+      [n('D5'),1],[n('C5'),1],[n('A4'),2],
+      [n('A4'),1],[n('C5'),1],[n('D5'),1],[n('C5'),1],
+      [n('A4'),2],[null,2],
+      // bars 16-23 — DROP hook (32 beats), soaring
+      [n('D5'),1],[n('F5'),1],[n('A5'),1.5],[n('F5'),0.5],
+      [n('D5'),1],[n('C5'),1],[n('A4'),2],
+      [n('C5'),1],[n('F5'),1],[n('G5'),1.5],[n('F5'),0.5],
+      [n('D5'),1],[n('C5'),1],[n('A4'),2],
+      [n('A5'),1],[n('G5'),1],[n('F5'),1.5],[n('D5'),0.5],
+      [n('C5'),1],[n('D5'),1],[n('F5'),2],
+      [n('G5'),1],[n('F5'),1],[n('D5'),1],[n('C5'),1],
+      [n('D5'),2],[null,2],
+      // bars 24-31 — breakdown (lower) then final drop (32 beats)
+      [n('F4'),2],[n('A4'),2],
+      [n('G4'),2],[n('C5'),2],
+      [n('A4'),2],[n('D5'),2],
+      [n('C5'),1],[n('A4'),1],[n('G4'),2],
+      [n('D5'),1],[n('F5'),1],[n('A5'),1.5],[n('F5'),0.5],
+      [n('G5'),1],[n('F5'),1],[n('D5'),2],
+      [n('C5'),1],[n('D5'),1],[n('F5'),2],
+      [n('D5'),1],[n('C5'),1],[n('A4'),1],[n('F4'),1]
+    ];
+
+    TRACKS.menu = { tempo: 128, chords: chords, arrangement: arr, risers: [15, 27], lead: lead };
+  })();
+
+  // ---------------------------------------------------------------------------
   // Engine state
   // ---------------------------------------------------------------------------
-  var audioCtx = null, masterGain = null, delaySend = null, noiseBuf = null;
+  var audioCtx = null, masterGain = null, duckGain = null, delaySend = null, noiseBuf = null;
   var unlocked = false, muted = false, masterVolume = 0.20;
   var currentTrack = null;
   var schedulerInterval = null;
@@ -320,13 +380,20 @@
     masterGain.gain.value = muted ? 0 : masterVolume;
     masterGain.connect(audioCtx.destination);
 
-    // Feedback delay send → adds the spacious, futuristic tail
+    // Sidechain "pump" bus: the melodic layers (pad/bass/arp/lead) run through
+    // duckGain, which is ducked on every kick and rebounds — the breathing motion
+    // that makes a track read as modern EDM instead of flat/retro. Drums bypass it.
+    duckGain = audioCtx.createGain();
+    duckGain.gain.value = 1;
+    duckGain.connect(masterGain);
+
+    // Feedback delay send → spacious reverb-like wash (post-duck so the tail blooms)
     var delay = audioCtx.createDelay(1.0);
-    delay.delayTime.value = 0.23;
+    delay.delayTime.value = 0.26;
     var feedback = audioCtx.createGain();
-    feedback.gain.value = 0.30;
+    feedback.gain.value = 0.38;
     delaySend = audioCtx.createGain();
-    delaySend.gain.value = 0.35;
+    delaySend.gain.value = 0.42;
     delaySend.connect(delay);
     delay.connect(feedback);
     feedback.connect(delay);
@@ -356,19 +423,56 @@
 
   function playLead(t, freq, dur) {
     var lp = audioCtx.createBiquadFilter();
-    lp.type = 'lowpass'; lp.Q.value = 7;
-    lp.frequency.setValueAtTime(700, t);
-    lp.frequency.linearRampToValueAtTime(3400, t + 0.05);
-    lp.frequency.exponentialRampToValueAtTime(900, t + dur);
+    lp.type = 'lowpass'; lp.Q.value = 2;
+    lp.frequency.setValueAtTime(900, t);
+    lp.frequency.linearRampToValueAtTime(2300, t + 0.08);
+    lp.frequency.exponentialRampToValueAtTime(1000, t + dur);
     var g = audioCtx.createGain();
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.linearRampToValueAtTime(0.22, t + 0.02);
-    g.gain.setValueAtTime(0.22, t + Math.max(0.05, dur * 0.55));
+    g.gain.linearRampToValueAtTime(0.2, t + 0.03);
+    g.gain.setValueAtTime(0.2, t + Math.max(0.05, dur * 0.6));
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    sawStack(t, freq, dur, [-9, 0, 9], lp);
+    // 5-voice supersaw for a smoother, wider (less bleepy) lead
+    sawStack(t, freq, dur, [-12, -5, 0, 5, 12], lp);
     lp.connect(g);
-    g.connect(masterGain);
+    g.connect(duckGain);
     g.connect(delaySend);
+  }
+
+  // Big "drop" lead — 5-voice supersaw + an octave-up shimmer layer
+  function playLeadBig(t, freq, dur) {
+    var lp = audioCtx.createBiquadFilter();
+    lp.type = 'lowpass'; lp.Q.value = 2.5;
+    lp.frequency.setValueAtTime(1100, t);
+    lp.frequency.linearRampToValueAtTime(3000, t + 0.08);
+    lp.frequency.exponentialRampToValueAtTime(1300, t + dur);
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(0.2, t + 0.03);
+    g.gain.setValueAtTime(0.2, t + Math.max(0.05, dur * 0.62));
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    sawStack(t, freq, dur, [-16, -9, -3, 3, 9, 16], lp); // 6-voice supersaw
+    sawStack(t, freq * 2, dur, [-7, 7], lp);             // octave-up shimmer
+    lp.connect(g);
+    g.connect(duckGain);
+    g.connect(delaySend);
+  }
+
+  // White-noise riser sweeping up into a drop
+  function playRiser(t, dur) {
+    if (!noiseBuf) return;
+    var src = audioCtx.createBufferSource();
+    src.buffer = noiseBuf; src.loop = true;
+    var hp = audioCtx.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.setValueAtTime(300, t);
+    hp.frequency.exponentialRampToValueAtTime(8000, t + dur);
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(0.07, t + dur * 0.92);
+    g.gain.linearRampToValueAtTime(0.0001, t + dur);
+    src.connect(hp); hp.connect(g); g.connect(masterGain);
+    src.start(t); src.stop(t + dur + 0.05);
   }
 
   function playBass(t, freq, dur) {
@@ -385,24 +489,25 @@
     var sub = audioCtx.createOscillator();
     sub.type = 'sine'; sub.frequency.value = freq;
     sub.connect(lp);
-    lp.connect(g); g.connect(masterGain);
+    lp.connect(g); g.connect(duckGain);
     saw.start(t); saw.stop(t + dur);
     sub.start(t); sub.stop(t + dur);
   }
 
   function playArp(t, freq, dur) {
     var lp = audioCtx.createBiquadFilter();
-    lp.type = 'lowpass'; lp.Q.value = 4;
-    lp.frequency.setValueAtTime(3200, t);
-    lp.frequency.exponentialRampToValueAtTime(700, t + dur);
+    lp.type = 'lowpass'; lp.Q.value = 2;
+    lp.frequency.setValueAtTime(2000, t);
+    lp.frequency.exponentialRampToValueAtTime(600, t + dur);
     var g = audioCtx.createGain();
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.linearRampToValueAtTime(0.12, t + 0.005);
+    g.gain.linearRampToValueAtTime(0.08, t + 0.01);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur * 0.9);
+    // triangle = mellower, less buzzy/retro pluck than a raw saw
     var o = audioCtx.createOscillator();
-    o.type = 'sawtooth'; o.frequency.value = freq;
+    o.type = 'triangle'; o.frequency.value = freq;
     o.connect(lp); lp.connect(g);
-    g.connect(masterGain); g.connect(delaySend);
+    g.connect(duckGain); g.connect(delaySend);
     o.start(t); o.stop(t + dur);
   }
 
@@ -415,7 +520,7 @@
     g.gain.setValueAtTime(0.05, t + dur * 0.7);
     g.gain.linearRampToValueAtTime(0.0001, t + dur);
     for (var i = 0; i < tones.length; i++) sawStack(t, tones[i], dur, [-6, 6], lp);
-    lp.connect(g); g.connect(masterGain);
+    lp.connect(g); g.connect(duckGain);
   }
 
   function playKick(t) {
@@ -426,8 +531,14 @@
     var g = audioCtx.createGain();
     g.gain.setValueAtTime(0.9, t);
     g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
-    o.connect(g); g.connect(masterGain);
+    o.connect(g); g.connect(masterGain); // kick bypasses the pump bus
     o.start(t); o.stop(t + 0.2);
+    // Sidechain pump: duck the melodic bus on the kick, then let it rebound
+    if (duckGain) {
+      duckGain.gain.cancelScheduledValues(t);
+      duckGain.gain.setValueAtTime(0.32, t);
+      duckGain.gain.linearRampToValueAtTime(1, t + 0.22);
+    }
   }
 
   function playHat(t) {
@@ -446,48 +557,65 @@
   // ---------------------------------------------------------------------------
   // Build one loop's worth of events from a track spec
   // ---------------------------------------------------------------------------
+  // Per-bar layer config. Tracks with an `arrangement` array get section-by-section
+  // control (intro/build/drop/breakdown); plain tracks fall back to global flags.
+  function barCfg(track, b) {
+    if (track.arrangement && track.arrangement[b]) {
+      var c = track.arrangement[b];
+      return { pad: !!c.pad, arp: !!c.arp, bass: !!c.bass, drums: c.drums || false, lead: !!c.lead, big: !!c.big };
+    }
+    return { pad: !!track.pad, arp: !!track.arp, bass: track.bass !== false, drums: track.drums || false, lead: true, big: false };
+  }
+
   function buildEvents(track) {
     var beatDur = 60 / track.tempo;
     var bars = track.chords.length;
+    var risers = track.risers || [];
     var evs = [];
 
     for (var b = 0; b < bars; b++) {
+      var cfg   = barCfg(track, b);
       var barT  = b * 4 * beatDur;
       var root  = track.chords[b][0];
       var tones = track.chords[b][1];
 
-      if (track.pad) evs.push({ t: barT, kind: 'pad', tones: tones, dur: 4 * beatDur });
+      if (cfg.pad) evs.push({ t: barT, kind: 'pad', tones: tones, dur: 4 * beatDur });
 
-      if (track.bass !== false) {
+      if (cfg.bass) {
         evs.push({ t: barT,                kind: 'bass', freq: root, dur: beatDur * 0.9 });
         evs.push({ t: barT + 1 * beatDur,  kind: 'bass', freq: root, dur: beatDur * 0.5 });
         evs.push({ t: barT + 2 * beatDur,  kind: 'bass', freq: root, dur: beatDur * 0.9 });
         evs.push({ t: barT + 3 * beatDur,  kind: 'bass', freq: root, dur: beatDur * 0.5 });
       }
 
-      if (track.arp) {
+      if (cfg.arp) {
         for (var i = 0; i < 8; i++) {
           evs.push({ t: barT + i * 0.5 * beatDur, kind: 'arp', freq: tones[i % tones.length], dur: 0.5 * beatDur });
         }
       }
 
-      if (track.drums === true) {
+      if (cfg.drums === true) {
         for (var k = 0; k < 4; k++) evs.push({ t: barT + k * beatDur, kind: 'kick' });
         for (var h = 0; h < 4; h++) evs.push({ t: barT + (h + 0.5) * beatDur, kind: 'hat' });
-      } else if (track.drums === 'soft') {
+      } else if (cfg.drums === 'soft') {
         evs.push({ t: barT, kind: 'kick' });
         evs.push({ t: barT + 2 * beatDur, kind: 'kick' });
       }
+
+      if (risers.indexOf(b) !== -1) evs.push({ t: barT, kind: 'riser', dur: 4 * beatDur });
     }
 
     if (track.lead) {
-      var t = 0;
+      var tb = 0; // cumulative beats
       for (var li = 0; li < track.lead.length; li++) {
         var freq  = track.lead[li][0];
         var beats = track.lead[li][1];
-        var dur   = beats * beatDur;
-        if (freq) evs.push({ t: t, kind: 'lead', freq: freq, dur: dur });
-        t += dur;
+        if (freq) {
+          var bar  = Math.min(bars - 1, Math.floor(tb / 4));
+          var lcfg = barCfg(track, bar);
+          if (lcfg.lead) evs.push({ t: tb * beatDur, kind: lcfg.big ? 'leadbig' : 'lead', freq: freq, dur: beats * beatDur });
+        }
+        tb += beats;
       }
     }
 
@@ -497,12 +625,14 @@
 
   function playEvent(ev, t) {
     switch (ev.kind) {
-      case 'lead': playLead(t, ev.freq, ev.dur); break;
-      case 'bass': playBass(t, ev.freq, ev.dur); break;
-      case 'arp':  playArp(t, ev.freq, ev.dur);  break;
-      case 'pad':  playPad(t, ev.tones, ev.dur); break;
-      case 'kick': playKick(t); break;
-      case 'hat':  playHat(t);  break;
+      case 'lead':    playLead(t, ev.freq, ev.dur);    break;
+      case 'leadbig': playLeadBig(t, ev.freq, ev.dur); break;
+      case 'bass':    playBass(t, ev.freq, ev.dur);    break;
+      case 'arp':     playArp(t, ev.freq, ev.dur);     break;
+      case 'pad':     playPad(t, ev.tones, ev.dur);    break;
+      case 'kick':    playKick(t); break;
+      case 'hat':     playHat(t);  break;
+      case 'riser':   playRiser(t, ev.dur); break;
     }
   }
 
