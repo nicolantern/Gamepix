@@ -4,23 +4,17 @@ const backButton = document.getElementById('back-button');
 
 let currentGame = null;
 
-const gameModules = {
-  snake: () => import('./games/snake.js'),
-  pong: () => import('./games/pong.js'),
-  tictactoe: () => import('./games/tictactoe.js'),
-  memory: () => import('./games/memory.js'),
-  flappy: () => import('./games/flappy.js'),
-};
-
-async function launchGame(name) {
-  const loader = gameModules[name];
-  if (!loader) return;
-  const module = await loader();
-  currentGame = module;
+function launchGame(name) {
+  const game = window.MiniGames && window.MiniGames[name];
+  if (!game) {
+    console.warn('No game registered for', name);
+    return;
+  }
+  currentGame = game;
   menu.style.display = 'none';
   gameContainer.classList.add('active');
   backButton.hidden = false;
-  module.mount(gameContainer);
+  game.mount(gameContainer);
 }
 
 function returnToMenu() {
