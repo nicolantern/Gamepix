@@ -314,13 +314,10 @@
 
     var arr = [];
     function section(from, to, cfg) { for (var b = from; b <= to; b++) arr[b] = cfg; }
-    // Mellow throughout — no high-energy drops, just a soft heartbeat kick.
-    section(0,  3,  { pad: true });                                                  // intro: pad only
-    section(4,  7,  { pad: true, arp: true });                                       // intro: + arp
-    section(8,  15, { pad: true, arp: true, bass: true, drums: 'soft', lead: true }); // theme A
-    section(16, 23, { pad: true, arp: true, bass: true, drums: 'soft', lead: true }); // theme B
-    section(24, 27, { pad: true, arp: true, lead: true });                           // breakdown (no drums)
-    section(28, 31, { pad: true, arp: true, bass: true, drums: 'soft', lead: true }); // outro
+    // Keep the calm intro texture the whole way through — ambient pad + gentle
+    // arp, no lead/bass/drums. (The melody/drop sections are intentionally off.)
+    section(0,  3,  { pad: true });               // pad only, gentle open
+    section(4, 31,  { pad: true, arp: true });    // hold the intro: pad + arp ambience
 
     var lead = [
       // bars 0-7 — intro, no lead
