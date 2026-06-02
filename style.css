@@ -19,6 +19,12 @@ header {
   border-bottom: 1px solid #2a2a3e;
 }
 
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 h1 { margin: 0; font-size: 24px; }
 
 #back-button {
@@ -31,6 +37,23 @@ h1 { margin: 0; font-size: 24px; }
   cursor: pointer;
 }
 #back-button:hover { background: #5a5a7a; }
+
+#mute-button {
+  background: transparent;
+  color: #aaa;
+  border: 1px solid #3a3a5a;
+  padding: 6px 10px;
+  font-size: 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  line-height: 1;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+#mute-button:hover {
+  color: #eaeaea;
+  border-color: #6a6a9a;
+  background: #2a2a3e;
+}
 
 main {
   flex: 1;

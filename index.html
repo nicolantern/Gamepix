@@ -14,7 +14,10 @@
   </div>
   <header>
     <h1>Gamepix</h1>
-    <button id="back-button" hidden>&larr; Back</button>
+    <div class="header-controls">
+      <button id="mute-button" aria-label="Toggle music">&#9834;</button>
+      <button id="back-button" hidden>&larr; Back</button>
+    </div>
   </header>
   <main>
     <div id="menu">
@@ -34,6 +37,7 @@
     </div>
     <div id="game-container"></div>
   </main>
+  <script src="games/audio.js"></script>
   <script src="games/controls.js"></script>
   <script src="games/snake.js"></script>
   <script src="games/pong.js"></script>
