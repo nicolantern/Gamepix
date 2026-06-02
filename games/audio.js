@@ -314,13 +314,13 @@
 
     var arr = [];
     function section(from, to, cfg) { for (var b = from; b <= to; b++) arr[b] = cfg; }
-    section(0,  3,  { pad: true });                                                   // intro: pad only
-    section(4,  7,  { pad: true, arp: true, drums: 'soft' });                         // intro: + arp, soft kick
-    section(8,  11, { pad: true, arp: true, bass: true, drums: true, lead: true });   // build A
-    section(12, 15, { pad: true, arp: true, bass: true, drums: true, lead: true });   // build B (riser at 15)
-    section(16, 23, { pad: true, arp: true, bass: true, drums: true, lead: true, big: true }); // DROP
-    section(24, 27, { pad: true, arp: true, lead: true, drums: 'soft' });             // breakdown
-    section(28, 31, { pad: true, arp: true, bass: true, drums: true, lead: true, big: true }); // final drop
+    // Mellow throughout — no high-energy drops, just a soft heartbeat kick.
+    section(0,  3,  { pad: true });                                                  // intro: pad only
+    section(4,  7,  { pad: true, arp: true });                                       // intro: + arp
+    section(8,  15, { pad: true, arp: true, bass: true, drums: 'soft', lead: true }); // theme A
+    section(16, 23, { pad: true, arp: true, bass: true, drums: 'soft', lead: true }); // theme B
+    section(24, 27, { pad: true, arp: true, lead: true });                           // breakdown (no drums)
+    section(28, 31, { pad: true, arp: true, bass: true, drums: 'soft', lead: true }); // outro
 
     var lead = [
       // bars 0-7 — intro, no lead
@@ -354,7 +354,7 @@
       [n('D5'),1],[n('C5'),1],[n('A4'),1],[n('F4'),1]
     ];
 
-    TRACKS.menu = { tempo: 128, chords: chords, arrangement: arr, risers: [15, 27], lead: lead };
+    TRACKS.menu = { tempo: 128, chords: chords, arrangement: arr, risers: [], lead: lead };
   })();
 
   // ---------------------------------------------------------------------------
