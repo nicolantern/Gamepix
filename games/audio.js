@@ -316,8 +316,9 @@
     function section(from, to, cfg) { for (var b = from; b <= to; b++) arr[b] = cfg; }
     // Keep the calm intro texture the whole way through — ambient pad + gentle
     // arp, no lead/bass/drums. (The melody/drop sections are intentionally off.)
-    section(0,  3,  { pad: true });               // pad only, gentle open
-    section(4, 31,  { pad: true, arp: true });    // hold the intro: pad + arp ambience
+    section(0,  3,  { pad: true });                              // pad only, gentle open
+    section(4,  7,  { pad: true, arp: true });                   // arp enters
+    section(8, 31,  { pad: true, arp: true, drums: 'soft' });    // + a soft kick pulse (mellow beat)
 
     var lead = [
       // bars 0-7 — intro, no lead
