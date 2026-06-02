@@ -64,6 +64,17 @@
     ctx.fillStyle = '#0f0f1e';
     ctx.fillRect(0, 0, GRID*CELL, GRID*CELL);
 
+    ctx.strokeStyle = '#1f1f3a';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = 1; i < GRID; i++) {
+      ctx.moveTo(i*CELL, 0);
+      ctx.lineTo(i*CELL, GRID*CELL);
+      ctx.moveTo(0, i*CELL);
+      ctx.lineTo(GRID*CELL, i*CELL);
+    }
+    ctx.stroke();
+
     ctx.fillStyle = '#e94560';
     ctx.fillRect(food.x*CELL+2, food.y*CELL+2, CELL-4, CELL-4);
 

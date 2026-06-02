@@ -1,4 +1,4 @@
-# mini-games — design
+  # mini-games — design
 
 Date: 2026-06-01
 Status: Approved, ready for implementation plan
