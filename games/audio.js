@@ -1,246 +1,298 @@
 (function () {
+  // ===========================================================================
+  // Gamepix audio engine — synthesized, futuristic melodic-electronic loops.
+  // Layered voices (sub bass + arp + detuned-saw lead + drums) routed through a
+  // master gain and a feedback-delay send for space. No files, no libraries.
+  // Public API is unchanged: unlock, play, stop, toggleMute, setMuted, isMuted.
+  // ===========================================================================
+
   // ---------------------------------------------------------------------------
-  // Note-frequency table (A4 = 440 Hz)
+  // Note-frequency helper (A4 = 440 Hz)
   // ---------------------------------------------------------------------------
   var NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
   function noteFreq(name) {
-    // e.g. 'C4', 'A#3', 'F#5'
     var m = name.match(/^([A-G]#?)(\d)$/);
     if (!m) return 0;
     var semi = NOTE_NAMES.indexOf(m[1]);
     var oct  = parseInt(m[2], 10);
-    // MIDI note: C0 = 12
     var midi = (oct + 1) * 12 + semi;
     return 440 * Math.pow(2, (midi - 69) / 12);
   }
-
-  // Short alias
   var n = noteFreq;
+  // chord helper → [bassFreq, [toneFreqs...]]
+  function C(bass, tones) { return [n(bass), tones.map(n)]; }
 
   // ---------------------------------------------------------------------------
-  // Track definitions  —  { tempo (BPM), wave, notes: [[freq|null, beats], ...] }
+  // Tracks. Each: { tempo, chords:[[bassFreq,[tones]]...], lead:[[freq|null,beats]],
+  //                 drums:true|'soft'|false, arp:bool, pad:bool, bass:bool }
+  // Loop length = chords.length bars × 4 beats. Lead runs in parallel over the loop.
+  // Uplifting "Sky High"-style progressions (vi–IV–I–V and relatives), original melodies.
   // ---------------------------------------------------------------------------
   var TRACKS = {
 
-    // --- MENU  — upbeat arcade jingle in C major, bouncy feel
+    // MENU — bright uplifting anthem, C major, Am–F–C–G ×2
     menu: {
-      tempo: 160, wave: 'square',
-      notes: [
-        [n('C5'),0.5],[n('E5'),0.5],[n('G5'),0.5],[n('C6'),1],
-        [n('B4'),0.5],[n('G4'),0.5],[n('E4'),0.5],[n('G4'),0.5],
-        [n('A4'),0.5],[n('C5'),0.5],[n('E5'),0.5],[n('A5'),1],
-        [n('G5'),0.5],[n('E5'),0.5],[n('D5'),0.5],[n('C5'),1],
-        [n('E5'),0.5],[n('G5'),0.5],[n('A5'),0.5],[n('G5'),0.5],
-        [n('F5'),0.5],[n('E5'),0.5],[n('D5'),0.5],[n('C5'),0.5],
-        [n('E4'),0.5],[n('G4'),0.5],[n('C5'),1.5],[null,0.5],
-        [n('G4'),0.5],[n('E4'),0.5],[n('C4'),2]
+      tempo: 128, drums: true, arp: true, pad: true,
+      chords: [
+        C('A2',['A3','C4','E4']), C('F2',['F3','A3','C4']), C('C2',['C3','E3','G3']), C('G2',['G3','B3','D4']),
+        C('A2',['A3','C4','E4']), C('F2',['F3','A3','C4']), C('C2',['C3','E3','G3']), C('G2',['G3','B3','D4'])
+      ],
+      lead: [
+        [n('E5'),1],[n('G5'),1],[n('A5'),1.5],[n('G5'),0.5],
+        [n('E5'),1],[n('C5'),1],[n('D5'),2],
+        [n('C5'),1],[n('E5'),1],[n('G5'),1.5],[n('A5'),0.5],
+        [n('G5'),1],[n('E5'),1],[n('D5'),1],[null,1],
+        [n('A5'),1],[n('G5'),1],[n('E5'),1.5],[n('D5'),0.5],
+        [n('C5'),1],[n('D5'),1],[n('E5'),2],
+        [n('G5'),1],[n('A5'),1],[n('B5'),1.5],[n('A5'),0.5],
+        [n('G5'),1],[n('E5'),1],[n('C5'),2]
       ]
     },
 
-    // --- SNAKE  — nimble, ascending/descending runs in D major
+    // SNAKE — nimble, D major, Bm–G–D–A
     snake: {
-      tempo: 140, wave: 'square',
-      notes: [
-        [n('D4'),0.5],[n('E4'),0.5],[n('F#4'),0.5],[n('A4'),0.5],
-        [n('B4'),0.5],[n('A4'),0.5],[n('F#4'),0.5],[n('D4'),0.5],
-        [n('E4'),0.5],[n('G4'),0.5],[n('A4'),0.5],[n('B4'),0.5],
-        [n('A4'),1],[n('G4'),0.5],[n('E4'),0.5],
-        [n('F#4'),0.5],[n('A4'),0.5],[n('D5'),1],[n('A4'),0.5],[n('F#4'),0.5],
-        [n('E4'),0.5],[n('D4'),0.5],[n('E4'),0.5],[n('F#4'),0.5],
-        [n('G4'),1],[n('F#4'),0.5],[n('E4'),0.5],
-        [n('D4'),2]
+      tempo: 132, drums: true, arp: true, pad: true,
+      chords: [
+        C('B2',['B3','D4','F#4']), C('G2',['G3','B3','D4']), C('D2',['D3','F#3','A3']), C('A2',['A3','C#4','E4']),
+        C('B2',['B3','D4','F#4']), C('G2',['G3','B3','D4']), C('D2',['D3','F#3','A3']), C('A2',['A3','C#4','E4'])
+      ],
+      lead: [
+        [n('F#5'),0.5],[n('A5'),0.5],[n('B5'),1],[n('A5'),0.5],[n('F#5'),0.5],[n('D5'),1],
+        [n('G5'),0.5],[n('B5'),0.5],[n('D6'),1],[n('B5'),1],
+        [n('A5'),0.5],[n('F#5'),0.5],[n('D5'),1],[n('E5'),0.5],[n('F#5'),0.5],[n('A5'),1],
+        [n('F#5'),0.5],[n('E5'),0.5],[n('C#5'),1],[null,1],
+        [n('F#5'),0.5],[n('A5'),0.5],[n('B5'),1],[n('A5'),0.5],[n('F#5'),0.5],[n('D5'),1],
+        [n('G5'),0.5],[n('B5'),0.5],[n('D6'),1.5],[n('B5'),0.5],
+        [n('A5'),1],[n('F#5'),1],[n('E5'),0.5],[n('F#5'),0.5],[n('E5'),0.5],[n('C#5'),0.5],
+        [n('D5'),2],[null,2]
       ]
     },
 
-    // --- PONG  — cool, electronic groove in A minor, pulsing quarter notes
+    // PONG — cool, A minor, Am–F–C–G
     pong: {
-      tempo: 128, wave: 'sawtooth',
-      notes: [
-        [n('A3'),1],[n('C4'),1],[n('E4'),1],[n('A4'),1],
-        [n('G4'),0.5],[n('E4'),0.5],[n('C4'),1],[n('D4'),1],
-        [n('E4'),1],[n('G4'),1],[n('A4'),1],[n('G4'),1],
-        [n('F4'),0.5],[n('E4'),0.5],[n('D4'),1],[n('C4'),1],
-        [n('A3'),1],[n('E4'),1],[n('C4'),1],[n('A3'),1],
-        [n('B3'),0.5],[n('D4'),0.5],[n('E4'),1],[n('G4'),1],
-        [n('F4'),0.5],[n('E4'),0.5],[n('D4'),0.5],[n('C4'),0.5],[n('B3'),1],
-        [n('A3'),2]
+      tempo: 124, drums: true, arp: true, pad: true,
+      chords: [
+        C('A2',['A3','C4','E4']), C('F2',['F3','A3','C4']), C('C2',['C3','E3','G3']), C('G2',['G3','B3','D4']),
+        C('A2',['A3','C4','E4']), C('F2',['F3','A3','C4']), C('C2',['C3','E3','G3']), C('G2',['G3','B3','D4'])
+      ],
+      lead: [
+        [n('A4'),1],[n('C5'),1],[n('E5'),1],[n('A5'),1],
+        [n('G5'),1.5],[n('E5'),0.5],[n('C5'),2],
+        [n('F5'),1],[n('A5'),1],[n('G5'),1],[n('E5'),1],
+        [n('D5'),1.5],[n('C5'),0.5],[n('B4'),2],
+        [n('E5'),1],[n('A5'),1],[n('C6'),1.5],[n('B5'),0.5],
+        [n('A5'),1],[n('G5'),1],[n('E5'),2],
+        [n('G5'),1],[n('B5'),1],[n('D6'),1],[n('B5'),1],
+        [n('A5'),2],[null,2]
       ]
     },
 
-    // --- TICTACTOE  — playful, light staccato in G major
+    // TICTACTOE — light, G major, Em–C–G–D
     tictactoe: {
-      tempo: 120, wave: 'triangle',
-      notes: [
-        [n('G4'),0.5],[null,0.5],[n('B4'),0.5],[null,0.5],
-        [n('D5'),0.5],[null,0.5],[n('G5'),0.5],[null,0.5],
-        [n('E5'),0.5],[null,0.5],[n('C5'),0.5],[null,0.5],
-        [n('D5'),1],[null,1],
-        [n('B4'),0.5],[null,0.5],[n('G4'),0.5],[null,0.5],
-        [n('A4'),0.5],[null,0.5],[n('B4'),0.5],[null,0.5],
-        [n('C5'),0.5],[n('D5'),0.5],[n('E5'),0.5],[n('D5'),0.5],
-        [n('G4'),2]
+      tempo: 118, drums: 'soft', arp: true, pad: true,
+      chords: [
+        C('E2',['E3','G3','B3']), C('C2',['C3','E3','G3']), C('G2',['G3','B3','D4']), C('D2',['D3','F#3','A3']),
+        C('E2',['E3','G3','B3']), C('C2',['C3','E3','G3']), C('G2',['G3','B3','D4']), C('D2',['D3','F#3','A3'])
+      ],
+      lead: [
+        [n('B4'),1],[n('D5'),1],[n('G5'),1.5],[n('D5'),0.5],
+        [n('E5'),1],[n('G5'),1],[n('B5'),2],
+        [n('A5'),1],[n('G5'),1],[n('D5'),1],[n('B4'),1],
+        [n('C5'),1],[n('E5'),1],[n('D5'),2],
+        [n('G5'),1],[n('B5'),1],[n('A5'),1.5],[n('G5'),0.5],
+        [n('E5'),1],[n('D5'),1],[n('G5'),2],
+        [n('B5'),1],[n('A5'),1],[n('F#5'),1.5],[n('A5'),0.5],
+        [n('G5'),2],[null,2]
       ]
     },
 
-    // --- MEMORY  — dreamy, gentle arpeggios in E minor
+    // MEMORY — dreamy, E minor, Em–C–G–D, pad-led, soft drums
     memory: {
-      tempo: 100, wave: 'triangle',
-      notes: [
-        [n('E4'),1],[n('G4'),1],[n('B4'),1],[n('E5'),1],
-        [n('D5'),1],[n('B4'),1],[n('G4'),1],[n('A4'),1],
-        [n('C5'),1],[n('E5'),1],[n('D5'),1],[n('B4'),1],
-        [n('G4'),1],[n('A4'),1],[n('B4'),1],[n('G4'),1],
-        [n('E4'),1],[n('B4'),1],[n('G4'),1],[n('E4'),1],
-        [n('F#4'),1],[n('A4'),1],[n('D5'),1],[n('C#5'),1],
-        [n('B4'),1],[n('A4'),1],[n('G4'),1],[n('F#4'),1],
-        [n('E4'),2],[null,2]
+      tempo: 100, drums: 'soft', arp: true, pad: true,
+      chords: [
+        C('E2',['E3','G3','B3']), C('C2',['C3','E3','G3']), C('G2',['G3','B3','D4']), C('D2',['D3','F#3','A3']),
+        C('E2',['E3','G3','B3']), C('C2',['C3','E3','G3']), C('A2',['A3','C4','E4']), C('B2',['B3','D4','F#4'])
+      ],
+      lead: [
+        [n('E5'),2],[n('G5'),1],[n('B5'),1],
+        [n('A5'),2],[n('G5'),1],[n('E5'),1],
+        [n('D5'),2],[n('E5'),1],[n('G5'),1],
+        [n('F#5'),2],[n('D5'),2],
+        [n('E5'),2],[n('B5'),1],[n('C6'),1],
+        [n('B5'),2],[n('G5'),2],
+        [n('A5'),2],[n('C6'),1],[n('B5'),1],
+        [n('F#5'),2],[null,2]
       ]
     },
 
-    // --- FLAPPY  — light and airy, E major, staccato hops
+    // FLAPPY — airy, E major, C#m–A–E–B
     flappy: {
-      tempo: 150, wave: 'triangle',
-      notes: [
-        [n('E5'),0.5],[null,0.5],[n('G#5'),0.5],[null,0.5],
-        [n('B5'),0.5],[null,0.5],[n('E6'),0.5],[null,0.5],
-        [n('D#6'),0.5],[n('B5'),0.5],[n('G#5'),0.5],[n('E5'),0.5],
-        [n('F#5'),1],[null,1],
-        [n('G#5'),0.5],[null,0.5],[n('B5'),0.5],[null,0.5],
-        [n('C#6'),0.5],[n('B5'),0.5],[n('G#5'),0.5],[n('F#5'),0.5],
-        [n('E5'),0.5],[n('F#5'),0.5],[n('G#5'),0.5],[n('A5'),0.5],
+      tempo: 140, drums: true, arp: true, pad: true,
+      chords: [
+        C('C#2',['C#4','E4','G#4']), C('A2',['A3','C#4','E4']), C('E2',['E3','G#3','B3']), C('B2',['B3','D#4','F#4']),
+        C('C#2',['C#4','E4','G#4']), C('A2',['A3','C#4','E4']), C('E2',['E3','G#3','B3']), C('B2',['B3','D#4','F#4'])
+      ],
+      lead: [
+        [n('G#5'),0.5],[n('B5'),0.5],[n('E6'),1],[n('B5'),0.5],[n('G#5'),0.5],[n('E5'),1],
+        [n('A5'),0.5],[n('C#6'),0.5],[n('E6'),1.5],[n('C#6'),0.5],
+        [n('B5'),0.5],[n('G#5'),0.5],[n('E5'),1],[n('F#5'),0.5],[n('G#5'),0.5],[n('B5'),1],
+        [n('D#6'),0.5],[n('B5'),0.5],[n('F#5'),1],[null,1],
+        [n('G#5'),0.5],[n('B5'),0.5],[n('E6'),1],[n('B5'),0.5],[n('G#5'),0.5],[n('E5'),1],
+        [n('A5'),0.5],[n('C#6'),0.5],[n('E6'),1.5],[n('C#6'),0.5],
+        [n('B5'),1],[n('G#5'),1],[n('F#5'),0.5],[n('G#5'),0.5],[n('F#5'),0.5],[n('D#5'),0.5],
+        [n('E5'),2],[null,2]
+      ]
+    },
+
+    // BREAKOUT — punchy, D major, Bm–G–D–A, driving
+    breakout: {
+      tempo: 142, drums: true, arp: true, pad: true,
+      chords: [
+        C('B2',['B3','D4','F#4']), C('G2',['G3','B3','D4']), C('D2',['D3','F#3','A3']), C('A2',['A3','C#4','E4']),
+        C('B2',['B3','D4','F#4']), C('G2',['G3','B3','D4']), C('D2',['D3','F#3','A3']), C('A2',['A3','C#4','E4'])
+      ],
+      lead: [
+        [n('D5'),0.5],[n('F#5'),0.5],[n('A5'),0.5],[n('D6'),0.5],[n('C#6'),0.5],[n('A5'),0.5],[n('F#5'),1],
+        [n('G5'),0.5],[n('B5'),0.5],[n('D6'),1],[n('B5'),1],
+        [n('A5'),0.5],[n('D6'),0.5],[n('C#6'),0.5],[n('A5'),0.5],[n('F#5'),0.5],[n('E5'),0.5],[n('D5'),1],
+        [n('E5'),0.5],[n('F#5'),0.5],[n('A5'),1],[null,1],
+        [n('D5'),0.5],[n('F#5'),0.5],[n('A5'),0.5],[n('D6'),0.5],[n('C#6'),0.5],[n('A5'),0.5],[n('F#5'),1],
+        [n('G5'),0.5],[n('B5'),0.5],[n('D6'),1.5],[n('B5'),0.5],
+        [n('A5'),1],[n('F#5'),1],[n('E5'),0.5],[n('D5'),0.5],[n('E5'),0.5],[n('C#5'),0.5],
+        [n('D5'),2],[null,2]
+      ]
+    },
+
+    // 2048 — methodical, C major, Am–F–C–G, soft beat
+    '2048': {
+      tempo: 112, drums: 'soft', arp: true, pad: true,
+      chords: [
+        C('A2',['A3','C4','E4']), C('F2',['F3','A3','C4']), C('C2',['C3','E3','G3']), C('G2',['G3','B3','D4']),
+        C('A2',['A3','C4','E4']), C('F2',['F3','A3','C4']), C('C2',['C3','E3','G3']), C('G2',['G3','B3','D4'])
+      ],
+      lead: [
+        [n('C5'),1],[n('E5'),1],[n('G5'),2],
+        [n('A5'),1],[n('G5'),1],[n('E5'),2],
+        [n('F5'),1],[n('A5'),1],[n('G5'),1],[n('E5'),1],
+        [n('D5'),2],[n('C5'),2],
+        [n('E5'),1],[n('G5'),1],[n('C6'),2],
+        [n('B5'),1],[n('A5'),1],[n('G5'),2],
+        [n('A5'),1],[n('G5'),1],[n('E5'),1],[n('D5'),1],
+        [n('C5'),2],[null,2]
+      ]
+    },
+
+    // WHACK — manic, B minor, Bm–G–Em–F#, fast
+    whack: {
+      tempo: 150, drums: true, arp: true, pad: true,
+      chords: [
+        C('B2',['B3','D4','F#4']), C('G2',['G3','B3','D4']), C('E2',['E3','G3','B3']), C('F#2',['F#3','A#3','C#4']),
+        C('B2',['B3','D4','F#4']), C('G2',['G3','B3','D4']), C('E2',['E3','G3','B3']), C('F#2',['F#3','A#3','C#4'])
+      ],
+      lead: [
+        [n('B5'),0.5],[n('F#5'),0.5],[n('B5'),0.5],[n('D6'),0.5],[n('B5'),0.5],[n('F#5'),0.5],[n('D5'),1],
+        [n('G5'),0.5],[n('D5'),0.5],[n('G5'),0.5],[n('B5'),0.5],[n('A5'),0.5],[n('G5'),0.5],[n('D5'),1],
+        [n('E5'),0.5],[n('B5'),0.5],[n('E6'),0.5],[n('B5'),0.5],[n('G5'),0.5],[n('E5'),0.5],[n('B4'),1],
+        [n('F#5'),0.5],[n('A#5'),0.5],[n('C#6'),1],[null,1],
+        [n('B5'),0.5],[n('D6'),0.5],[n('F#6'),0.5],[n('D6'),0.5],[n('B5'),0.5],[n('F#5'),0.5],[n('D5'),1],
+        [n('G5'),0.5],[n('B5'),0.5],[n('D6'),1.5],[n('B5'),0.5],
+        [n('E6'),0.5],[n('B5'),0.5],[n('G5'),0.5],[n('E5'),0.5],[n('F#5'),0.5],[n('A#5'),0.5],[n('C#6'),1],
         [n('B5'),2]
       ]
     },
 
-    // --- BREAKOUT  — energetic, punchy rock rhythm in D major
-    breakout: {
-      tempo: 170, wave: 'sawtooth',
-      notes: [
-        [n('D4'),0.5],[n('D4'),0.5],[n('F#4'),0.5],[null,0.5],
-        [n('A4'),0.5],[n('A4'),0.5],[n('D5'),0.5],[null,0.5],
-        [n('C#5'),0.5],[n('B4'),0.5],[n('A4'),0.5],[n('G4'),0.5],
-        [n('F#4'),1],[n('E4'),0.5],[n('D4'),0.5],
-        [n('E4'),0.5],[n('E4'),0.5],[n('G4'),0.5],[null,0.5],
-        [n('A4'),0.5],[n('A4'),0.5],[n('C#5'),0.5],[null,0.5],
-        [n('D5'),0.5],[n('C#5'),0.5],[n('B4'),0.5],[n('A4'),0.5],
-        [n('D4'),2]
-      ]
-    },
-
-    // --- 2048  — methodical, minimalist, steady pulse in C major
-    '2048': {
-      tempo: 110, wave: 'triangle',
-      notes: [
-        [n('C4'),1],[n('E4'),1],[n('G4'),1],[n('C5'),1],
-        [null,0.5],[n('B4'),0.5],[n('A4'),0.5],[n('G4'),0.5],[n('F4'),1],
-        [n('E4'),1],[n('F4'),1],[n('G4'),1],[n('E4'),1],
-        [n('D4'),1],[n('C4'),1],[null,2],
-        [n('G4'),1],[n('A4'),1],[n('B4'),1],[n('C5'),1],
-        [n('D5'),0.5],[n('C5'),0.5],[n('B4'),0.5],[n('A4'),0.5],[n('G4'),1],
-        [n('F4'),0.5],[n('E4'),0.5],[n('D4'),0.5],[n('C4'),0.5],[n('E4'),1],
-        [n('C4'),2]
-      ]
-    },
-
-    // --- WHACK  — manic, frenetic in B minor, lots of rests
-    whack: {
-      tempo: 190, wave: 'square',
-      notes: [
-        [n('B4'),0.25],[null,0.25],[n('D5'),0.25],[null,0.25],
-        [n('F#5'),0.25],[null,0.25],[n('B5'),0.5],
-        [null,0.5],[n('A5'),0.25],[null,0.25],[n('G5'),0.25],[null,0.25],
-        [n('F#5'),0.5],[n('E5'),0.5],
-        [n('D5'),0.25],[null,0.25],[n('E5'),0.25],[null,0.25],
-        [n('F#5'),0.25],[n('G5'),0.25],[n('A5'),0.25],[n('B5'),0.25],
-        [n('C#5'),0.5],[null,0.5],[n('B4'),0.5],[null,0.5],
-        [n('F#4'),1],[null,1],
-        [n('B4'),0.25],[n('D5'),0.25],[n('F#5'),0.25],[n('A5'),0.25],
-        [n('G5'),0.5],[n('E5'),0.5],
-        [n('D5'),0.25],[null,0.25],[n('F#5'),0.25],[null,0.25],
-        [n('A5'),0.5],[n('B5'),0.25],[null,0.75],
-        [n('B4'),2]
-      ]
-    },
-
-    // --- DINO  — driving, relentless 8-bit run in A major
+    // DINO — driving, A major, F#m–D–A–E
     dino: {
-      tempo: 175, wave: 'square',
-      notes: [
-        [n('A4'),0.5],[n('C#5'),0.5],[n('E5'),0.5],[n('A5'),0.5],
-        [n('G#5'),0.5],[n('E5'),0.5],[n('C#5'),0.5],[n('A4'),0.5],
-        [n('B4'),0.5],[n('D5'),0.5],[n('E5'),0.5],[n('G#5'),0.5],
-        [n('A5'),1],[n('E5'),0.5],[n('C#5'),0.5],
-        [n('D5'),0.5],[n('F#5'),0.5],[n('A5'),0.5],[n('D6'),0.5],
-        [n('C#6'),0.5],[n('A5'),0.5],[n('F#5'),0.5],[n('D5'),0.5],
-        [n('E5'),0.5],[n('C#5'),0.5],[n('B4'),0.5],[n('E5'),0.5],
-        [n('A4'),2]
+      tempo: 144, drums: true, arp: true, pad: true,
+      chords: [
+        C('F#2',['F#3','A3','C#4']), C('D2',['D3','F#3','A3']), C('A2',['A3','C#4','E4']), C('E2',['E3','G#3','B3']),
+        C('F#2',['F#3','A3','C#4']), C('D2',['D3','F#3','A3']), C('A2',['A3','C#4','E4']), C('E2',['E3','G#3','B3'])
+      ],
+      lead: [
+        [n('F#5'),0.5],[n('A5'),0.5],[n('C#6'),1],[n('A5'),0.5],[n('F#5'),0.5],[n('C#5'),1],
+        [n('D5'),0.5],[n('F#5'),0.5],[n('A5'),1],[n('F#5'),1],
+        [n('C#6'),0.5],[n('A5'),0.5],[n('E5'),1],[n('A5'),0.5],[n('C#6'),0.5],[n('E6'),1],
+        [n('B5'),0.5],[n('G#5'),0.5],[n('E5'),1],[null,1],
+        [n('F#5'),0.5],[n('A5'),0.5],[n('C#6'),1],[n('A5'),0.5],[n('F#5'),0.5],[n('C#5'),1],
+        [n('D5'),0.5],[n('F#5'),0.5],[n('A5'),1.5],[n('F#5'),0.5],
+        [n('E6'),1],[n('C#6'),1],[n('B5'),0.5],[n('G#5'),0.5],[n('B5'),0.5],[n('E5'),0.5],
+        [n('A5'),2],[null,2]
       ]
     },
 
-    // --- TETRIS  — original folk-inspired minor melody (NOT Korobeiniki; D natural minor)
+    // TETRIS — driving minor, D minor, Dm–Bb–F–C / Dm–A
     tetris: {
-      tempo: 145, wave: 'square',
-      notes: [
-        [n('D5'),1],[n('C5'),0.5],[n('A#4'),0.5],
-        [n('A4'),0.5],[n('A#4'),0.5],[n('C5'),0.5],[n('D5'),0.5],
-        [n('C5'),0.5],[n('A#4'),0.5],[n('A4'),1],
-        [null,0.5],[n('A4'),0.5],[n('C5'),0.5],[n('E5'),0.5],
-        [n('F5'),0.5],[n('E5'),0.5],[n('D5'),1],
-        [n('C5'),0.5],[n('D5'),0.5],[n('E5'),0.5],[n('C5'),0.5],
-        [n('A#4'),0.5],[n('A4'),0.5],[n('G4'),1],
-        [n('A4'),0.5],[n('A#4'),0.5],[n('C5'),0.5],[n('A#4'),0.5],
-        [n('A4'),1],[n('G4'),0.5],[n('A4'),0.5],
-        [n('A#4'),0.5],[n('A4'),0.5],[n('G4'),0.5],[n('F4'),0.5],
-        [n('D4'),1],[null,1]
+      tempo: 140, drums: true, arp: true, pad: true,
+      chords: [
+        C('D2',['D3','F3','A3']), C('A2',['A3','C#4','E4']), C('D2',['D3','F3','A3']), C('A2',['A3','C#4','E4']),
+        C('A#2',['A#3','D4','F4']), C('F2',['F3','A3','C4']), C('C2',['C3','E3','G3']), C('A2',['A3','C#4','E4'])
+      ],
+      lead: [
+        [n('D5'),1],[n('A4'),0.5],[n('A#4'),0.5],[n('C5'),1],[n('A4'),1],
+        [n('A#4'),0.5],[n('C5'),0.5],[n('D5'),1],[n('A4'),1],[null,1],
+        [n('C5'),1],[n('E5'),0.5],[n('F5'),0.5],[n('E5'),1],[n('C5'),1],
+        [n('A4'),1],[n('A#4'),0.5],[n('A4'),0.5],[n('G4'),1],[null,1],
+        [n('F5'),1],[n('E5'),0.5],[n('D5'),0.5],[n('A4'),1],[n('D5'),1],
+        [n('E5'),0.5],[n('F5'),0.5],[n('G5'),1],[n('A5'),1],[n('F5'),1],
+        [n('E5'),1],[n('D5'),0.5],[n('C5'),0.5],[n('A#4'),1],[n('A4'),1],
+        [n('D5'),2],[null,2]
       ]
     },
 
-    // --- INVADERS  — ominous, march-like in F minor, descending
+    // INVADERS — ominous, F minor, Fm–Db–Ab–Eb
     invaders: {
-      tempo: 120, wave: 'sawtooth',
-      notes: [
-        [n('F4'),0.5],[n('F4'),0.5],[n('G#4'),0.5],[n('A#4'),0.5],
-        [n('C5'),0.5],[n('A#4'),0.5],[n('G#4'),0.5],[n('F4'),0.5],
-        [n('D#4'),0.5],[n('F4'),0.5],[n('G4'),0.5],[n('D#4'),0.5],
-        [n('C4'),1],[null,1],
-        [n('F4'),0.5],[n('G#4'),0.5],[n('A#4'),0.5],[n('C5'),0.5],
-        [n('D5'),0.5],[n('C5'),0.5],[n('A#4'),0.5],[n('G4'),0.5],
-        [n('F4'),0.5],[n('D#4'),0.5],[n('C4'),0.5],[n('D4'),0.5],
-        [n('F4'),2]
+      tempo: 124, drums: true, arp: true, pad: true,
+      chords: [
+        C('F2',['F3','G#3','C4']), C('C#2',['C#3','F3','G#3']), C('G#2',['G#3','C4','D#4']), C('D#2',['D#3','G3','A#3']),
+        C('F2',['F3','G#3','C4']), C('C#2',['C#3','F3','G#3']), C('G#2',['G#3','C4','D#4']), C('C2',['C3','E3','G3'])
+      ],
+      lead: [
+        [n('F5'),1],[n('G#5'),0.5],[n('C6'),0.5],[n('A#5'),1],[n('G#5'),1],
+        [n('F5'),1],[n('D#5'),0.5],[n('F5'),0.5],[n('C5'),2],
+        [n('G#5'),1],[n('C6'),0.5],[n('D#6'),0.5],[n('C6'),1],[n('A#5'),1],
+        [n('G#5'),1],[n('F5'),1],[n('D#5'),2],
+        [n('F5'),1],[n('G#5'),0.5],[n('C6'),0.5],[n('A#5'),1],[n('C6'),1],
+        [n('D#6'),1],[n('C6'),0.5],[n('A#5'),0.5],[n('G#5'),2],
+        [n('C6'),1],[n('A#5'),1],[n('G#5'),0.5],[n('G5'),0.5],[n('F5'),1],
+        [n('F5'),2],[null,2]
       ]
     },
 
-    // --- ASTEROIDS  — sparse, spacey, slow drifting in C# minor
+    // ASTEROIDS — spacey, C# minor, C#m–A–E–B, sparse lead, soft drums, big delay
     asteroids: {
-      tempo: 88, wave: 'sawtooth',
-      notes: [
-        [n('C#4'),2],[null,1],[n('G#4'),1],
-        [n('E4'),1.5],[null,0.5],[n('B3'),1.5],[null,0.5],
-        [n('F#4'),2],[null,1],[n('C#4'),1],
-        [n('D#4'),1],[n('C#4'),1],[n('B3'),2],
-        [null,1],[n('A3'),1.5],[n('B3'),0.5],
-        [n('C#4'),1.5],[n('E4'),0.5],[n('G#4'),1],[null,1],
-        [n('F#4'),1],[n('E4'),1],[n('D#4'),1],[n('C#4'),1],
-        [null,4]
+      tempo: 110, drums: 'soft', arp: true, pad: true,
+      chords: [
+        C('C#2',['C#3','E3','G#3']), C('A1',['A2','C#3','E3']), C('E2',['E3','G#3','B3']), C('B1',['B2','D#3','F#3']),
+        C('C#2',['C#3','E3','G#3']), C('A1',['A2','C#3','E3']), C('E2',['E3','G#3','B3']), C('B1',['B2','D#3','F#3'])
+      ],
+      lead: [
+        [n('G#5'),2],[n('E5'),2],
+        [n('C#5'),3],[n('E5'),1],
+        [n('B4'),2],[n('G#4'),2],
+        [n('F#4'),3],[null,1],
+        [n('G#5'),2],[n('B5'),2],
+        [n('E5'),3],[n('C#5'),1],
+        [n('D#5'),2],[n('C#5'),1],[n('B4'),1],
+        [n('C#5'),3],[null,1]
       ]
     },
 
-    // --- PACMAN  — bouncy, major-pentatonic, bright and cheerful in G major
+    // PACMAN — bouncy, G major, G–Em–C–D
     pacman: {
-      tempo: 155, wave: 'square',
-      notes: [
-        [n('G4'),0.5],[n('A4'),0.5],[n('B4'),0.5],[n('D5'),0.5],
-        [n('E5'),1],[n('D5'),0.5],[n('B4'),0.5],
-        [n('C5'),0.5],[n('D5'),0.5],[n('E5'),0.5],[n('G5'),0.5],
-        [n('A5'),1],[null,1],
-        [n('G5'),0.5],[n('E5'),0.5],[n('D5'),0.5],[n('B4'),0.5],
-        [n('C5'),0.5],[n('B4'),0.5],[n('A4'),0.5],[n('G4'),0.5],
-        [n('A4'),0.5],[n('B4'),0.5],[n('A4'),0.5],[n('G4'),0.5],
-        [n('D5'),1],[n('G4'),1],
-        [n('B4'),0.5],[n('D5'),0.5],[n('G5'),0.5],[n('B5'),0.5],
-        [n('A5'),0.5],[n('G5'),0.5],[n('E5'),0.5],[n('D5'),0.5],
-        [n('C5'),0.5],[n('B4'),0.5],[n('A4'),0.5],[n('G4'),0.5],
-        [n('G4'),2]
+      tempo: 150, drums: true, arp: true, pad: true,
+      chords: [
+        C('G2',['G3','B3','D4']), C('E2',['E3','G3','B3']), C('C2',['C3','E3','G3']), C('D2',['D3','F#3','A3']),
+        C('G2',['G3','B3','D4']), C('E2',['E3','G3','B3']), C('C2',['C3','E3','G3']), C('D2',['D3','F#3','A3'])
+      ],
+      lead: [
+        [n('G5'),0.5],[n('B5'),0.5],[n('D6'),1],[n('B5'),0.5],[n('G5'),0.5],[n('D5'),1],
+        [n('E5'),0.5],[n('G5'),0.5],[n('B5'),1],[n('G5'),1],
+        [n('C6'),0.5],[n('B5'),0.5],[n('G5'),1],[n('A5'),0.5],[n('B5'),0.5],[n('C6'),1],
+        [n('B5'),0.5],[n('A5'),0.5],[n('F#5'),1],[null,1],
+        [n('G5'),0.5],[n('B5'),0.5],[n('D6'),1],[n('B5'),0.5],[n('G5'),0.5],[n('D5'),1],
+        [n('E5'),0.5],[n('G5'),0.5],[n('B5'),1.5],[n('G5'),0.5],
+        [n('A5'),1],[n('B5'),1],[n('A5'),0.5],[n('G5'),0.5],[n('F#5'),0.5],[n('A5'),0.5],
+        [n('G5'),2],[null,2]
       ]
     }
   };
@@ -248,149 +300,271 @@
   // ---------------------------------------------------------------------------
   // Engine state
   // ---------------------------------------------------------------------------
-  var audioCtx      = null;
-  var masterGain    = null;
-  var unlocked      = false;
-  var masterVolume  = 0.25;
-  var muted         = false;
-  var currentTrack  = null;   // track name string
+  var audioCtx = null, masterGain = null, delaySend = null, noiseBuf = null;
+  var unlocked = false, muted = false, masterVolume = 0.20;
+  var currentTrack = null;
   var schedulerInterval = null;
-  var nextNoteTime  = 0;      // audioCtx time of next note
-  var noteIndex     = 0;      // index into current track's notes array
-  var LOOKAHEAD_MS  = 100;    // schedule notes within this window
-  var SCHEDULE_MS   = 25;     // how often to run scheduler
+  var trackEvents = [], loopDur = 0, loopStartTime = 0, evIndex = 0;
+  var LOOKAHEAD_MS = 120, SCHEDULE_MS = 25;
 
   // ---------------------------------------------------------------------------
-  // Internal helpers
+  // Context + shared nodes
   // ---------------------------------------------------------------------------
   function createContext() {
     if (audioCtx) return;
     var Ctx = window.AudioContext || window.webkitAudioContext;
     if (!Ctx) return;
-    audioCtx  = new Ctx();
+    audioCtx = new Ctx();
+
     masterGain = audioCtx.createGain();
     masterGain.gain.value = muted ? 0 : masterVolume;
     masterGain.connect(audioCtx.destination);
+
+    // Feedback delay send → adds the spacious, futuristic tail
+    var delay = audioCtx.createDelay(1.0);
+    delay.delayTime.value = 0.23;
+    var feedback = audioCtx.createGain();
+    feedback.gain.value = 0.30;
+    delaySend = audioCtx.createGain();
+    delaySend.gain.value = 0.35;
+    delaySend.connect(delay);
+    delay.connect(feedback);
+    feedback.connect(delay);
+    delay.connect(masterGain);
+
+    // White-noise buffer for hi-hats
+    var len = audioCtx.sampleRate * 0.4;
+    noiseBuf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+    var data = noiseBuf.getChannelData(0);
+    for (var i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
   }
 
-  function scheduleNote(freq, duration, startTime) {
-    if (!audioCtx) return;
-    if (!freq) return; // rest — just advance time
-
-    var osc  = audioCtx.createOscillator();
-    var gain = audioCtx.createGain();
-
-    osc.type = TRACKS[currentTrack] ? TRACKS[currentTrack].wave : 'square';
-    osc.frequency.value = freq;
-
-    // Quick attack + short decay envelope to avoid clicks
-    gain.gain.setValueAtTime(0, startTime);
-    gain.gain.linearRampToValueAtTime(1, startTime + 0.005);
-    gain.gain.setValueAtTime(1, startTime + duration * 0.75);
-    gain.gain.linearRampToValueAtTime(0, startTime + duration - 0.005);
-
-    osc.connect(gain);
-    gain.connect(masterGain);
-
-    osc.start(startTime);
-    osc.stop(startTime + duration);
-    // Oscillator and gain node auto-GC after osc.stop fires
-  }
-
-  function stopScheduler() {
-    if (schedulerInterval !== null) {
-      clearInterval(schedulerInterval);
-      schedulerInterval = null;
+  // ---------------------------------------------------------------------------
+  // Voices — each schedules a short-lived node graph that stops itself (auto-GC)
+  // ---------------------------------------------------------------------------
+  function sawStack(t, freq, dur, detunes, target) {
+    for (var i = 0; i < detunes.length; i++) {
+      var o = audioCtx.createOscillator();
+      o.type = 'sawtooth';
+      o.frequency.value = freq;
+      o.detune.value = detunes[i];
+      o.connect(target);
+      o.start(t);
+      o.stop(t + dur);
     }
-    noteIndex    = 0;
-    nextNoteTime = 0;
+  }
+
+  function playLead(t, freq, dur) {
+    var lp = audioCtx.createBiquadFilter();
+    lp.type = 'lowpass'; lp.Q.value = 7;
+    lp.frequency.setValueAtTime(700, t);
+    lp.frequency.linearRampToValueAtTime(3400, t + 0.05);
+    lp.frequency.exponentialRampToValueAtTime(900, t + dur);
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(0.22, t + 0.02);
+    g.gain.setValueAtTime(0.22, t + Math.max(0.05, dur * 0.55));
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    sawStack(t, freq, dur, [-9, 0, 9], lp);
+    lp.connect(g);
+    g.connect(masterGain);
+    g.connect(delaySend);
+  }
+
+  function playBass(t, freq, dur) {
+    var lp = audioCtx.createBiquadFilter();
+    lp.type = 'lowpass'; lp.frequency.value = 520; lp.Q.value = 1;
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(0.24, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    // saw body + sine sub
+    var saw = audioCtx.createOscillator();
+    saw.type = 'sawtooth'; saw.frequency.value = freq;
+    saw.connect(lp);
+    var sub = audioCtx.createOscillator();
+    sub.type = 'sine'; sub.frequency.value = freq;
+    sub.connect(lp);
+    lp.connect(g); g.connect(masterGain);
+    saw.start(t); saw.stop(t + dur);
+    sub.start(t); sub.stop(t + dur);
+  }
+
+  function playArp(t, freq, dur) {
+    var lp = audioCtx.createBiquadFilter();
+    lp.type = 'lowpass'; lp.Q.value = 4;
+    lp.frequency.setValueAtTime(3200, t);
+    lp.frequency.exponentialRampToValueAtTime(700, t + dur);
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(0.12, t + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur * 0.9);
+    var o = audioCtx.createOscillator();
+    o.type = 'sawtooth'; o.frequency.value = freq;
+    o.connect(lp); lp.connect(g);
+    g.connect(masterGain); g.connect(delaySend);
+    o.start(t); o.stop(t + dur);
+  }
+
+  function playPad(t, tones, dur) {
+    var lp = audioCtx.createBiquadFilter();
+    lp.type = 'lowpass'; lp.frequency.value = 1300; lp.Q.value = 0.7;
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(0.05, t + dur * 0.25);
+    g.gain.setValueAtTime(0.05, t + dur * 0.7);
+    g.gain.linearRampToValueAtTime(0.0001, t + dur);
+    for (var i = 0; i < tones.length; i++) sawStack(t, tones[i], dur, [-6, 6], lp);
+    lp.connect(g); g.connect(masterGain);
+  }
+
+  function playKick(t) {
+    var o = audioCtx.createOscillator();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(150, t);
+    o.frequency.exponentialRampToValueAtTime(50, t + 0.1);
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.9, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+    o.connect(g); g.connect(masterGain);
+    o.start(t); o.stop(t + 0.2);
+  }
+
+  function playHat(t) {
+    if (!noiseBuf) return;
+    var src = audioCtx.createBufferSource();
+    src.buffer = noiseBuf;
+    var hp = audioCtx.createBiquadFilter();
+    hp.type = 'highpass'; hp.frequency.value = 7000;
+    var g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.10, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+    src.connect(hp); hp.connect(g); g.connect(masterGain);
+    src.start(t); src.stop(t + 0.06);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Build one loop's worth of events from a track spec
+  // ---------------------------------------------------------------------------
+  function buildEvents(track) {
+    var beatDur = 60 / track.tempo;
+    var bars = track.chords.length;
+    var evs = [];
+
+    for (var b = 0; b < bars; b++) {
+      var barT  = b * 4 * beatDur;
+      var root  = track.chords[b][0];
+      var tones = track.chords[b][1];
+
+      if (track.pad) evs.push({ t: barT, kind: 'pad', tones: tones, dur: 4 * beatDur });
+
+      if (track.bass !== false) {
+        evs.push({ t: barT,                kind: 'bass', freq: root, dur: beatDur * 0.9 });
+        evs.push({ t: barT + 1 * beatDur,  kind: 'bass', freq: root, dur: beatDur * 0.5 });
+        evs.push({ t: barT + 2 * beatDur,  kind: 'bass', freq: root, dur: beatDur * 0.9 });
+        evs.push({ t: barT + 3 * beatDur,  kind: 'bass', freq: root, dur: beatDur * 0.5 });
+      }
+
+      if (track.arp) {
+        for (var i = 0; i < 8; i++) {
+          evs.push({ t: barT + i * 0.5 * beatDur, kind: 'arp', freq: tones[i % tones.length], dur: 0.5 * beatDur });
+        }
+      }
+
+      if (track.drums === true) {
+        for (var k = 0; k < 4; k++) evs.push({ t: barT + k * beatDur, kind: 'kick' });
+        for (var h = 0; h < 4; h++) evs.push({ t: barT + (h + 0.5) * beatDur, kind: 'hat' });
+      } else if (track.drums === 'soft') {
+        evs.push({ t: barT, kind: 'kick' });
+        evs.push({ t: barT + 2 * beatDur, kind: 'kick' });
+      }
+    }
+
+    if (track.lead) {
+      var t = 0;
+      for (var li = 0; li < track.lead.length; li++) {
+        var freq  = track.lead[li][0];
+        var beats = track.lead[li][1];
+        var dur   = beats * beatDur;
+        if (freq) evs.push({ t: t, kind: 'lead', freq: freq, dur: dur });
+        t += dur;
+      }
+    }
+
+    evs.sort(function (a, b2) { return a.t - b2.t; });
+    return { events: evs, loopDur: bars * 4 * beatDur };
+  }
+
+  function playEvent(ev, t) {
+    switch (ev.kind) {
+      case 'lead': playLead(t, ev.freq, ev.dur); break;
+      case 'bass': playBass(t, ev.freq, ev.dur); break;
+      case 'arp':  playArp(t, ev.freq, ev.dur);  break;
+      case 'pad':  playPad(t, ev.tones, ev.dur); break;
+      case 'kick': playKick(t); break;
+      case 'hat':  playHat(t);  break;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Scheduler (lookahead). One interval at a time; cleared on stop/switch.
+  // ---------------------------------------------------------------------------
+  function stopScheduler() {
+    if (schedulerInterval !== null) { clearInterval(schedulerInterval); schedulerInterval = null; }
+    trackEvents = []; loopDur = 0; loopStartTime = 0; evIndex = 0;
   }
 
   function startScheduler(trackName) {
-    stopScheduler(); // clear any previous scheduler first — critical for no leaks
-
+    stopScheduler();
     currentTrack = trackName;
-    var track    = TRACKS[trackName];
+    var track = TRACKS[trackName];
     if (!track || !audioCtx) return;
 
-    var beatDur = 60 / track.tempo; // seconds per beat
-    nextNoteTime = audioCtx.currentTime + 0.05; // small initial delay
-    noteIndex    = 0;
+    var built   = buildEvents(track);
+    trackEvents = built.events;
+    loopDur     = built.loopDur;
+    loopStartTime = audioCtx.currentTime + 0.1;
+    evIndex     = 0;
 
     schedulerInterval = setInterval(function () {
-      if (!audioCtx) return;
-      var lookaheadEnd = audioCtx.currentTime + LOOKAHEAD_MS / 1000;
-
-      while (nextNoteTime < lookaheadEnd) {
-        var note     = track.notes[noteIndex];
-        var freq     = note[0];
-        var beats    = note[1];
-        var duration = beats * beatDur;
-
-        scheduleNote(freq, duration, nextNoteTime);
-
-        nextNoteTime += duration;
-        noteIndex++;
-        if (noteIndex >= track.notes.length) {
-          noteIndex = 0; // loop
-        }
+      if (!audioCtx || !trackEvents.length) return;
+      var ahead = audioCtx.currentTime + LOOKAHEAD_MS / 1000;
+      // schedule every event whose absolute time falls inside the lookahead window
+      while (true) {
+        if (evIndex >= trackEvents.length) { evIndex = 0; loopStartTime += loopDur; }
+        var ev = trackEvents[evIndex];
+        var absT = loopStartTime + ev.t;
+        if (absT < ahead) { playEvent(ev, absT); evIndex++; }
+        else break;
       }
     }, SCHEDULE_MS);
   }
 
   // ---------------------------------------------------------------------------
-  // Public API
+  // Public API (unchanged surface)
   // ---------------------------------------------------------------------------
   function unlock() {
     createContext();
     if (!audioCtx) return;
-    if (audioCtx.state === 'suspended') {
-      audioCtx.resume();
-    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
     if (!unlocked) {
       unlocked = true;
-      // If a track was requested before unlock, start it now
-      if (currentTrack && schedulerInterval === null) {
-        startScheduler(currentTrack);
-      }
+      if (currentTrack && schedulerInterval === null) startScheduler(currentTrack);
     }
   }
 
   function play(trackName) {
-    stopScheduler(); // always stop first — prevents stacked voices / leaked intervals
-
-    if (!TRACKS[trackName]) {
-      // Unknown track — just silence
-      currentTrack = null;
-      return;
-    }
-
+    stopScheduler();
+    if (!TRACKS[trackName]) { currentTrack = null; return; }
     currentTrack = trackName;
-
-    if (!unlocked) {
-      // Remember the track; scheduler will start when unlock() is called
-      return;
-    }
-    if (!audioCtx) {
-      // Shouldn't happen if unlocked, but guard anyway
-      return;
-    }
-    if (audioCtx.state === 'suspended') {
-      audioCtx.resume();
-    }
+    if (!unlocked || !audioCtx) return; // will start on unlock()
+    if (audioCtx.state === 'suspended') audioCtx.resume();
     startScheduler(trackName);
   }
 
-  function stop() {
-    stopScheduler();
-    currentTrack = null;
-  }
+  function stop() { stopScheduler(); currentTrack = null; }
 
-  function toggleMute() {
-    muted = !muted;
-    setMuted(muted);
-    return muted;
-  }
+  function toggleMute() { muted = !muted; setMuted(muted); return muted; }
 
   function setMuted(bool) {
     muted = !!bool;
@@ -400,13 +574,11 @@
     }
   }
 
-  function isMuted() {
-    return muted;
-  }
+  function isMuted() { return muted; }
 
-  // ---------------------------------------------------------------------------
-  // Register
-  // ---------------------------------------------------------------------------
   window.MiniGames = window.MiniGames || {};
-  window.MiniGames.audio = { unlock: unlock, play: play, stop: stop, toggleMute: toggleMute, setMuted: setMuted, isMuted: isMuted };
+  window.MiniGames.audio = {
+    unlock: unlock, play: play, stop: stop,
+    toggleMute: toggleMute, setMuted: setMuted, isMuted: isMuted
+  };
 })();
