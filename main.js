@@ -1,3 +1,10 @@
+const introOverlay = document.getElementById('intro-overlay');
+if (introOverlay) {
+  const dismiss = () => introOverlay.classList.add('dismissed');
+  introOverlay.addEventListener('click', dismiss);
+  setTimeout(() => { introOverlay.remove(); }, 4000);
+}
+
 const menu = document.getElementById('menu');
 const gameContainer = document.getElementById('game-container');
 const backButton = document.getElementById('back-button');
