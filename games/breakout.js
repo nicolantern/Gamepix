@@ -32,6 +32,7 @@
   let ctx = null;
   let rafId = null;
   let keyHandler = null;
+  let keyUpHandler = null;
   let pointerMoveHandler = null;
   let pointerDownHandler = null;
   let touchMoveHandler = null;
@@ -230,11 +231,7 @@
     if (bricks.every(b => !b.alive)) {
       level += 1;
       brickRows = Math.min(brickRows + 1, MAX_BRICK_ROWS);
-      // increase ball speed for next level
-      const speed = Math.sqrt(ballVX * ballVX + ballVY * ballVY) * BALL_SPEED_FACTOR;
-      const angle = Math.atan2(ballVX, -ballVY);
-      ballVX = Math.sin(angle) * speed;
-      ballVY = -Math.cos(angle) * speed;
+      // launch() applies per-level speed scaling via BALL_SPEED_BASE * BALL_SPEED_FACTOR^(level-1)
       startLevel();
     }
   }
@@ -317,14 +314,12 @@
       }
       if (k === 'ArrowLeft' || k === 'ArrowRight' || k === ' ') e.preventDefault();
     };
-    const keyUpHandler = (e) => {
+    keyUpHandler = (e) => {
       if (e.key === 'ArrowLeft')  moveLeftHeld  = false;
       if (e.key === 'ArrowRight') moveRightHeld = false;
     };
     window.addEventListener('keydown', keyHandler);
     window.addEventListener('keyup', keyUpHandler);
-    // store keyUpHandler so we can remove it in unmount
-    keyHandler._up = keyUpHandler;
 
     // ── pointer (mouse + touch) drag on canvas ─────────────────────────────────
     pointerMoveHandler = (e) => {
@@ -376,11 +371,8 @@
   function unmount() {
     if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
 
-    if (keyHandler) {
-      window.removeEventListener('keydown', keyHandler);
-      if (keyHandler._up) window.removeEventListener('keyup', keyHandler._up);
-      keyHandler = null;
-    }
+    if (keyHandler)   { window.removeEventListener('keydown', keyHandler);   keyHandler   = null; }
+    if (keyUpHandler) { window.removeEventListener('keyup',   keyUpHandler); keyUpHandler = null; }
 
     if (canvas) {
       if (pointerMoveHandler)  canvas.removeEventListener('mousemove',   pointerMoveHandler);
