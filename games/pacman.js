@@ -68,6 +68,7 @@
   const MODE_CHASE      = 'chase';
   const MODE_FRIGHTENED = 'frightened';
   const MODE_EYES       = 'eyes';
+  const MODE_HOUSE      = 'house';
 
   // Ghost house
   const HOUSE_CENTER_X = 13;
@@ -333,7 +334,7 @@
       g.px = gc.x; g.py = gc.y;
       g.dir = DIR_LEFT;
       g.pixelProgress = 0;
-      g.mode = MODE_SCATTER;
+      g.mode = def.dotLimit <= 0 ? MODE_SCATTER : MODE_HOUSE;
       g.stuck = false;
     });
 
@@ -360,7 +361,7 @@
         px: gc.x, py: gc.y,
         dir: DIR_LEFT,
         pixelProgress: 0,
-        mode: MODE_SCATTER,
+        mode: def.dotLimit <= 0 ? MODE_SCATTER : MODE_HOUSE,
         name: def.name, color: def.color,
         scatterX: def.scatterX, scatterY: def.scatterY,
         dotLimit: def.dotLimit,
@@ -374,7 +375,7 @@
     frightMs = frightTotal;
     eatCombo = 0;
     ghosts.forEach(g => {
-      if (g.mode !== MODE_EYES) {
+      if (g.mode !== MODE_EYES && g.mode !== MODE_HOUSE) {
         g.mode = MODE_FRIGHTENED;
         g.dir  = { x: -g.dir.x, y: -g.dir.y };
       }
@@ -416,7 +417,7 @@
       modePhaseIdx++;
       globalMode = (modePhaseIdx % 2 === 0) ? MODE_SCATTER : MODE_CHASE;
       ghosts.forEach(g => {
-        if (g.mode !== MODE_FRIGHTENED && g.mode !== MODE_EYES) {
+        if (g.mode !== MODE_FRIGHTENED && g.mode !== MODE_EYES && g.mode !== MODE_HOUSE) {
           g.mode = globalMode;
           g.dir  = { x: -g.dir.x, y: -g.dir.y };
         }
@@ -438,11 +439,18 @@
 
   // ─── Ghost house exit ─────────────────────────────────────────────────────
   function updateHouseExit() {
-    ghosts.forEach((g, i) => {
-      if (i === 0) return; // Blinky already out
-      if (g.mode === MODE_SCATTER || g.mode === MODE_CHASE) return;
-      if (g.mode === MODE_FRIGHTENED || g.mode === MODE_EYES) return;
-      if (dotsEaten >= g.dotLimit) g.mode = globalMode;
+    ghosts.forEach((g) => {
+      if (g.mode !== MODE_HOUSE) return;
+      if (dotsEaten >= g.dotLimit) {
+        // Teleport to the house exit tile (just above the door) and release
+        g.tileX = HOUSE_CENTER_X;
+        g.tileY = HOUSE_CENTER_Y - 3; // row 11, just outside the house door
+        const gc = tpx(g.tileX, g.tileY);
+        g.px = gc.x; g.py = gc.y;
+        g.pixelProgress = 0;
+        g.dir  = DIR_LEFT;
+        g.mode = globalMode;
+      }
     });
   }
 
@@ -459,6 +467,7 @@
   // ─── Collisions ───────────────────────────────────────────────────────────
   function checkCollisions() {
     for (const g of ghosts) {
+      if (g.mode === MODE_HOUSE) continue; // inside house, no collision with Pac-Man
       const dx = Math.abs(g.px - pac.px);
       const dy = Math.abs(g.py - pac.py);
       if (dx >= CELL * 0.75 || dy >= CELL * 0.75) continue;
@@ -537,6 +546,7 @@
 
     // Move ghosts
     for (const g of ghosts) {
+      if (g.mode === MODE_HOUSE) continue; // waiting in house — stationary until released
       let spd = (g.mode === MODE_EYES)       ? GHOST_EYES_SPD
               : (g.mode === MODE_FRIGHTENED)  ? GHOST_FRIGHT_SPD
               : GHOST_SPD_BASE * (1 + (level - 1) * 0.05);
