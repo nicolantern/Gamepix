@@ -174,6 +174,18 @@
       players: 'Single Player',
       difficulty: 'Easy to Learn, Hard to Master',
       objective: 'Cross the road and river to fill all five home bays without getting hit or drowning.'
+    },
+
+    doodle: { // draft
+      title: 'Doodle Jump',
+      paragraphs: [
+        "Bounce your way to the sky in this addictive vertical hopper! Your doodler springs upward all on its own—your job is to steer left and right, landing on platform after platform to climb ever higher. Drift off one side and you'll pop out the other!",
+        "Watch out for moving platforms and the long drop below. One missed landing and it's a plunge to the bottom. Simple one-handed controls, endless climbing, and a high score that's always just out of reach. How high can you bounce? 🟡⬆️"
+      ],
+      genre: 'Arcade, Casual',
+      players: 'Single Player',
+      difficulty: 'Easy to Learn, Hard to Master',
+      objective: 'Bounce as high as possible from platform to platform without falling off the bottom.'
     }
   };
 
