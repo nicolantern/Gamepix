@@ -186,6 +186,18 @@
       players: 'Single Player',
       difficulty: 'Easy to Learn, Hard to Master',
       objective: 'Bounce as high as possible from platform to platform without falling off the bottom.'
+    },
+
+    towerdef: { // draft
+      title: 'Tower Defense',
+      paragraphs: [
+        "Defend your base in this strategic battle of wits! Waves of enemies march along a winding path toward the exit—your job is to build towers along the way to blast them before they break through. Earn gold for every kill and spend it on more firepower.",
+        "Choose your arsenal: Rapid-fire guns, long-range Snipers, and Frost towers that slow foes to a crawl. Place them wisely, survive all ten escalating waves, and don't let your lives run out. Can you hold the line? 🏰💥"
+      ],
+      genre: 'Strategy, Tower Defense',
+      players: 'Single Player',
+      difficulty: 'Easy to Learn, Hard to Master',
+      objective: 'Place towers to destroy all ten waves of enemies before they leak past your defenses.'
     }
   };
 
