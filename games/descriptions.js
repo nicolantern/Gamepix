@@ -162,6 +162,18 @@
       players: 'Single Player',
       difficulty: 'Easy to Learn, Hard to Master',
       objective: 'Eat all the pellets while avoiding the ghosts to clear each maze.'
+    },
+
+    frogger: { // draft
+      title: 'Frogger',
+      paragraphs: [
+        "Hop your way to safety in this all-time arcade classic! Guide your frog across a busy highway of speeding traffic, then leap from log to log over a treacherous river to reach the home bays at the top. Time every jump—one wrong move and it's splat or splash!",
+        "Dodge, ride, and hop with quick reflexes and careful timing. Fill all five bays to clear the level, then do it again as everything speeds up. How many levels can you conquer? 🐸🚗"
+      ],
+      genre: 'Arcade, Action',
+      players: 'Single Player',
+      difficulty: 'Easy to Learn, Hard to Master',
+      objective: 'Cross the road and river to fill all five home bays without getting hit or drowning.'
     }
   };
 
