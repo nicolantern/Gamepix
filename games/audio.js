@@ -364,6 +364,7 @@
   var schedulerInterval = null;
   var trackEvents = [], loopDur = 0, loopStartTime = 0, evIndex = 0;
   var LOOKAHEAD_MS = 120, SCHEDULE_MS = 25;
+  var beatCallback = null, beatTimeouts = []; // visual beat sync (e.g. menu speakers)
 
   // ---------------------------------------------------------------------------
   // Context + shared nodes
@@ -537,6 +538,12 @@
       duckGain.gain.setValueAtTime(0.32, t);
       duckGain.gain.linearRampToValueAtTime(1, t + 0.22);
     }
+    // Visual beat sync: fire the callback when this kick actually sounds (not muted)
+    if (beatCallback && !muted) {
+      var delayMs = Math.max(0, (t - audioCtx.currentTime) * 1000);
+      var id = setTimeout(function () { if (beatCallback && !muted) beatCallback(); }, delayMs);
+      beatTimeouts.push(id);
+    }
   }
 
   function playHat(t) {
@@ -639,6 +646,8 @@
   // ---------------------------------------------------------------------------
   function stopScheduler() {
     if (schedulerInterval !== null) { clearInterval(schedulerInterval); schedulerInterval = null; }
+    for (var i = 0; i < beatTimeouts.length; i++) clearTimeout(beatTimeouts[i]);
+    beatTimeouts = [];
     trackEvents = []; loopDur = 0; loopStartTime = 0; evIndex = 0;
   }
 
@@ -704,9 +713,12 @@
 
   function isMuted() { return muted; }
 
+  function onBeat(cb) { beatCallback = cb; }
+
   window.MiniGames = window.MiniGames || {};
   window.MiniGames.audio = {
     unlock: unlock, play: play, stop: stop,
-    toggleMute: toggleMute, setMuted: setMuted, isMuted: isMuted
+    toggleMute: toggleMute, setMuted: setMuted, isMuted: isMuted,
+    onBeat: onBeat
   };
 })();

@@ -32,6 +32,7 @@ if (introOverlay) {
 // Menu / game lifecycle
 // ---------------------------------------------------------------------------
 var menu          = document.getElementById('menu');
+var menuArea      = document.getElementById('menu-area');
 var gameContainer = document.getElementById('game-container');
 var backButton    = document.getElementById('back-button');
 var muteButton    = document.getElementById('mute-button');
@@ -45,7 +46,7 @@ function launchGame(name) {
     return;
   }
   currentGame = game;
-  menu.style.display = 'none';
+  menuArea.style.display = 'none';
   gameContainer.classList.add('active');
   backButton.hidden = false;
   game.mount(gameContainer);
@@ -62,7 +63,7 @@ function returnToMenu() {
   gameContainer.classList.remove('active');
   gameContainer.innerHTML = '';
   backButton.hidden = true;
-  menu.style.display = 'grid';
+  menuArea.style.display = 'flex';
   if (window.MiniGames && window.MiniGames.audio) {
     window.MiniGames.audio.play('menu');
   }
