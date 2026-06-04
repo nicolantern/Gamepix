@@ -192,6 +192,7 @@
       if (dRight > oLeft && dLeft < oRight && dBot > oTop && dTop < oBot) {
         alive = false;
         if (score > highScore) highScore = score;
+        if (window.MiniGames.scores) window.MiniGames.scores.submit('dino', score);
         return;
       }
     }

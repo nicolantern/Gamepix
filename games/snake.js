@@ -43,11 +43,11 @@
     const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
 
     if (head.x < 0 || head.x >= GRID || head.y < 0 || head.y >= GRID) {
-      alive = false;
+      alive = false; if (window.MiniGames.scores) window.MiniGames.scores.submit('snake', score);
       return;
     }
     if (snake.some(s => s.x === head.x && s.y === head.y)) {
-      alive = false;
+      alive = false; if (window.MiniGames.scores) window.MiniGames.scores.submit('snake', score);
       return;
     }
 

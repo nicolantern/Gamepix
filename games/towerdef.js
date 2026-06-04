@@ -118,7 +118,7 @@
       }
     }
     enemies = enemies.filter(function (e) { return !e.leaked && e.hp > 0; });
-    if (lives <= 0) { phase = 'over'; return; }
+    if (lives <= 0) { phase = 'over'; if (window.MiniGames.scores) window.MiniGames.scores.submit('towerdef', waveNum); return; }
 
     // Towers fire
     for (var j = 0; j < towers.length; j++) {
@@ -157,7 +157,7 @@
 
     // Wave cleared?
     if (phase === 'wave' && spawnLeft === 0 && enemies.length === 0) {
-      if (waveNum >= 10) { phase = 'win'; }
+      if (waveNum >= 10) { phase = 'win'; if (window.MiniGames.scores) window.MiniGames.scores.submit('towerdef', 10); }
       else { waveNum++; phase = 'prep'; money += 15; }
     }
   }

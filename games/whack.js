@@ -158,6 +158,7 @@
       }
     }
 
+    if (window.MiniGames.scores) window.MiniGames.scores.submit('whack', score);
     if (statusEl) statusEl.textContent = "Time's up!  Score: " + score;
     if (hintEl) hintEl.textContent = '';
 

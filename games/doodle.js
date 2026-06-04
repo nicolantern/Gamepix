@@ -92,7 +92,7 @@
     fillUp();
 
     // Fall off the bottom → game over
-    if (doodler.y > H + 20) { state = 'over'; best = Math.max(best, score); }
+    if (doodler.y > H + 20) { state = 'over'; best = Math.max(best, score); if (window.MiniGames.scores) window.MiniGames.scores.submit('doodle', score); }
   }
 
   function roundRect(x, y, w, h, r) {

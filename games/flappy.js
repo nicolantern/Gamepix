@@ -50,7 +50,7 @@
     pipes = pipes.filter(p => p.x + PIPE_W > 0);
 
     if (birdY + BIRD_R >= H || birdY - BIRD_R <= 0) {
-      alive = false;
+      alive = false; if (window.MiniGames.scores) window.MiniGames.scores.submit('flappy', score);
       return;
     }
 
@@ -58,7 +58,7 @@
       const inX = BIRD_X + BIRD_R > p.x && BIRD_X - BIRD_R < p.x + PIPE_W;
       if (inX) {
         const inGap = birdY - BIRD_R > p.gapY && birdY + BIRD_R < p.gapY + GAP_H;
-        if (!inGap) { alive = false; return; }
+        if (!inGap) { alive = false; if (window.MiniGames.scores) window.MiniGames.scores.submit('flappy', score); return; }
       }
       if (!p.passed && p.x + PIPE_W < BIRD_X - BIRD_R) {
         p.passed = true;

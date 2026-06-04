@@ -309,7 +309,7 @@
   function killShip() {
     lives--;
     if (lives <= 0) {
-      gameOver = true;
+      gameOver = true; if (window.MiniGames.scores) window.MiniGames.scores.submit('asteroids', score);
       ship = null;
     } else {
       ship = makeShip();

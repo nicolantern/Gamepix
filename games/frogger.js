@@ -63,7 +63,7 @@
 
   function die() {
     lives -= 1;
-    if (lives <= 0) state = 'over';
+    if (lives <= 0) { state = 'over'; if (window.MiniGames.scores) window.MiniGames.scores.submit('frogger', score); }
     else resetFrog();
   }
 

@@ -381,7 +381,7 @@
   }
 
   function triggerGameOver() {
-    gameOver = true;
+    gameOver = true; if (window.MiniGames.scores) window.MiniGames.scores.submit('tetris', score);
     current = null;
     updateStatus();
   }

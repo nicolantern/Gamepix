@@ -179,7 +179,7 @@
     if (ballY - BALL_R > CANVAS_H) {
       lives -= 1;
       if (lives <= 0) {
-        gameOver = true;
+        gameOver = true; if (window.MiniGames.scores) window.MiniGames.scores.submit('breakout', score);
       } else {
         serveBall();
       }

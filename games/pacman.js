@@ -481,7 +481,7 @@
         g.dir  = DIR_UP;
       } else if (g.mode !== MODE_EYES) {
         lives--;
-        if (lives <= 0) { lives = 0; gameOver = true; }
+        if (lives <= 0) { lives = 0; gameOver = true; if (window.MiniGames.scores) window.MiniGames.scores.submit('pacman', score); }
         else resetPositions();
         return;
       }

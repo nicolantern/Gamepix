@@ -233,7 +233,7 @@
         }
       }
     }
-    if (isGameOver(grid)) gameOver = true;
+    if (isGameOver(grid)) { if (!gameOver && window.MiniGames.scores) window.MiniGames.scores.submit('2048', score); gameOver = true; }
     renderGrid(cellEls);
     renderStatus(scoreEl, bestEl, statusBanner);
   }

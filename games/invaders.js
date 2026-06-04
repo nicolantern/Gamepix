@@ -462,7 +462,7 @@
   }
 
   function triggerGameOver(msg) {
-    gameOver = true;
+    gameOver = true; if (window.MiniGames.scores) window.MiniGames.scores.submit('invaders', score);
     gameOverMsg = msg;
     bullets = [];
     bombs = [];
