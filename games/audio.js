@@ -356,24 +356,22 @@
   })();
 
   // ---------------------------------------------------------------------------
-  // DOODLE JUMP — bouncy A-minor tune. Lead transcribes the requested melody:
-  // E C B A · E C B A · F C B A · F C B A · G · F · E C B A · E C B A · F E ·
-  // D C B A · D C B A · D C B A · D C B A · C · D  (then loops). Descending
-  // runs are eighths; the single notes (G, F, C, D) are held. 8 bars, Am–F–C–Am
-  // | Dm–Am–F–G under it.
+  // DOODLE JUMP — bouncy A-minor tune. Continuous descending eighth-note runs:
+  // E C B A · E C B A · F C B A · F C B A · E C B A · E C B A · F E ·
+  // D C B A · D C B A · D C B A · D C B A  (then loops, with a 2-beat turnaround).
+  // 6 bars, Am–F–Am–Dm–Am–G under it. (G/F and C/D removed per request.)
   // ---------------------------------------------------------------------------
   TRACKS.doodle = {
     tempo: 124, drums: true, arp: true, pad: true,
     chords: [
-      C('A2',['A3','C4','E4']), C('F2',['F3','A3','C4']), C('C2',['C3','E3','G3']), C('A2',['A3','C4','E4']),
-      C('D2',['D3','F3','A3']), C('A2',['A3','C4','E4']), C('F2',['F3','A3','C4']), C('G2',['G3','B3','D4'])
+      C('A2',['A3','C4','E4']), C('F2',['F3','A3','C4']), C('A2',['A3','C4','E4']),
+      C('D2',['D3','F3','A3']), C('A2',['A3','C4','E4']), C('G2',['G3','B3','D4'])
     ],
     lead: [
       [n('E5'),0.5],[n('C5'),0.5],[n('B4'),0.5],[n('A4'),0.5],
       [n('E5'),0.5],[n('C5'),0.5],[n('B4'),0.5],[n('A4'),0.5],
       [n('F5'),0.5],[n('C5'),0.5],[n('B4'),0.5],[n('A4'),0.5],
       [n('F5'),0.5],[n('C5'),0.5],[n('B4'),0.5],[n('A4'),0.5],
-      [null,4],
       [n('E5'),0.5],[n('C5'),0.5],[n('B4'),0.5],[n('A4'),0.5],
       [n('E5'),0.5],[n('C5'),0.5],[n('B4'),0.5],[n('A4'),0.5],
       [n('F5'),1],[n('E5'),1],
@@ -381,8 +379,7 @@
       [n('D5'),0.5],[n('C5'),0.5],[n('B4'),0.5],[n('A4'),0.5],
       [n('D5'),0.5],[n('C5'),0.5],[n('B4'),0.5],[n('A4'),0.5],
       [n('D5'),0.5],[n('C5'),0.5],[n('B4'),0.5],[n('A4'),0.5],
-      [null,2],
-      [null,4]
+      [null,2]
     ]
   };
 
